@@ -1,3 +1,5 @@
+![NIR](https://github.com/AbnormalDistributions/landsat8_scene_calculator/blob/main/NIR.png)
+
 # Landsat8 Scene Calculator
  This script creates NDVI, SAVI, RBG, and color infrared (NIR) images using Landsat8 imagery.
 
