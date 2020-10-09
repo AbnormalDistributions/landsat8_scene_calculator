@@ -3,77 +3,152 @@
 # This script creates NDVIs, SAVIs, RBG, and NIR images using Landsat8 imagery.
 
 import os
-import requests
-import rasterio
-import numpy as np
+from enum import Enum
 
-# Set the main directory
-main_dir = os.getcwd()
-# Set and create data directory if it doesn't exist
-data_dir = os.path.join(main_dir, 'data')
-if not os.path.exists(data_dir):
-    os.makedirs(data_dir)
-    print('data_dir did not exist. New data directory created.')
+import numpy as np
+import rasterio
+import requests
+
 
 # Set the base URL for the scene
 url_base = 'https://landsat-pds.s3.amazonaws.com/c1/L8/046/028/LC08_L1TP_046028_20200908_20200918_01_T1/LC08_L1TP_046028_20200908_20200918_01_T1_B'
 
+
+class Bands(Enum):
+    BLUE = 2
+    GREEN = 3
+    RED = 4
+    NEAR_IR = 5
+
+
+class Scenes(Enum):
+    NDVI = 0
+    SAVI = 1
+    RGB = 2
+    NIR = 3
+
+
+def ndvi_bands(bands):
+    return np.array([(bands[1] - bands[0]) / (bands[1] + bands[0])])
+
+
+def savi_bands(bands):
+    return np.array([
+        ((bands[1] - bands[0]) / (bands[1] + bands[0] + 0.5)) * 1.5
+    ])
+
+
+def combine_bands(bands):
+    return np.array(bands)
+
+
+scenes_list = [
+    ('NDVI', 'Normalized Difference Vegetation', [Bands.RED, Bands.NEAR_IR],
+     ndvi_bands, 1),
+    ('SAVI', 'Soil Adjusted Vegetation Index', [Bands.RED,
+                                                Bands.NEAR_IR], savi_bands, 1),
+    ('RBG', 'Visible Spectrum', [Bands.RED, Bands.GREEN,
+                                 Bands.BLUE], combine_bands, 3),
+    ('NIR', 'False Color Infrared', [Bands.NEAR_IR, Bands.RED,
+                                     Bands.GREEN], combine_bands, 3)
+]
+
+
+def make_bands(scene):
+    bands_list = scenes_list[scene.value][2]
+    check_bands_exist(bands_list)
+    bands, open_file = create_list(bands_list)
+    band_func = scenes_list[scene.value][3]
+    band_count = scenes_list[scene.value][4]
+    print(f'Calculating {scene.name} scene from bands')
+    image_data = band_func(bands)
+    export_tif(f'{scene.name}.TIF', image_data, open_file, band_count)
+    open_file.close()
+
+
+def print_hz_line():
+    cols, _ = os.get_terminal_size()
+    print('-' * (cols - 5))
+
+
+def get_data_dir():
+    # Set the main directory
+    main_dir = os.getcwd()
+    # Set and create data directory if it doesn't exist
+    data_dir = os.path.join(main_dir, 'data')
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+        print('data_dir did not exist. New data directory created.')
+    return data_dir
+
+
+def save_file_from_web(url, filename):
+    r = requests.get(url, stream=True, allow_redirects=True)
+    if r.status_code != 200:
+        print('Connection Error')
+        return False
+    size = r.headers.get('Content-Length', None)
+    if size == None:
+        print('Download file size unknown. Downloading..')
+        with open(filename, 'wb') as writer:
+            writer.write(r.content)
+        print('Download Complete')
+        return True
+    print(f'Downloading file ...')
+    cols, _ = os.get_terminal_size()
+    downloaded = 0
+    with open(filename, 'wb') as writer:
+        for data in r.iter_content(chunk_size=1024):
+            writer.write(data)
+            downloaded += 1024
+            perc = int(100 * downloaded / int(size))
+            char_len = (downloaded) * (cols - 10) / int(size)
+            print('#' * int(char_len), f'{perc}%', end='\r')
+
+    print('\nDownload Complete')
+    return True
+
+
 # Define main function that gets user input
 def main():
     while True:
-        selection = int(input( '-------------------------------\n'
-                               'Select a calculation for the scene:\n'
-                              '  1) Normalized Difference Vegetation (NDVI)\n'
-                              '  2) Soil Adjusted Vegetation Index (SAVI)\n'
-                              '  3) Visible Spectrum (RBG)\n'
-                              '  4) False Color Infrared (NIR)\n'
-                              '  5) *Exit*\n'
-                              '-------------------------------\n'
-                              'Input number for selection: '))
-        # Process user input
-        if selection == 1:
-            print('NDVI selected.\n'
-                  '-------------------------------')
-            make_ndvi()
-        elif selection == 2:
-            print('SAVI selected.\n'
-                  '-------------------------------')
-            make_savi()
-        elif selection == 3:
-            print('RGB Image selected.\n'
-                  '-------------------------------')
-            make_rgb()
-        elif selection == 4:
-            print('False Color Infrared (NIR) selected.\n'
-                  '-------------------------------')
-            make_nir()
-        elif selection == 5:
-            print('Exiting.')
+        print_hz_line()
+        print('Select a calculation scene:')
+        for i, scene in enumerate(scenes_list):
+            print(f'{i+1}) {scene[1]} ({scene[0]})')
+        print('5) *Exit*')
+        print_hz_line()
+        # take input
+        selection = int(input()) - 1
+        if selection == 4:
+            print('Existing')
             break
+
+        print(f'{scenes_list[selection][0]} selected.')
+        print_hz_line()
+        make_bands(Scenes(selection))
+
 
 # Define function for obtaining files from internet resource
 # and save them to disk
-def get_files(band_list):
-    # Request the file and save to disk
-    for band in band_list:
-        TIF_file_name = band +'.TIF'
-        # Set location for file to be saved
-        output_file = os.path.join(data_dir, TIF_file_name)
-        # Set TIF file URL to be requested
-        band_url = url_base + TIF_file_name
-        # Request file
-        print('Attempting to request band ' + str(band) + '.')
-        r = requests.get(band_url, allow_redirects=True)
-        # Check the status code
-        status = r.status_code
-        print('Request Status Code for band', band, 'is', status)
-        if status == 200:
-            # Save the file
-            print('Saving band ' + str(band) + ' TIF to data directory.')
-            with open(output_file, 'wb') as data:
-                data.write(r.content)
-        else:
-            print('Connection error.')
+def check_bands_exist(bands_list):
+    for band in bands_list:
+        TIF_file_name = f'{band.name}.TIF'
+        output_file = os.path.join(get_data_dir(), TIF_file_name)
+        if not os.path.exists(output_file):
+            print(f'locally {band.name} band file not found.')
+            download_band(band)
+
+
+def download_band(band):
+    TIF_file_name = f'{band.name}.TIF'
+    output_file = os.path.join(get_data_dir(), TIF_file_name)
+    # Set TIF file URL to be requested
+    band_url = f'{url_base}{band.value}.TIF'
+    # Request file
+    print(f'Getting {band.name} band from web.')
+    save_file_from_web(band_url, output_file)
+
 
 # Define function for creating and return a list containing
 # all band data
@@ -83,119 +158,41 @@ def create_list(band_list):
     temp_list = []
     counter = 0
     for band in band_list:
-        TIF_file_name = band + '.TIF'
+        TIF_file_name = f'{band.name}.TIF'
         # Set location for file to be imported
-        input_file = os.path.join(data_dir, TIF_file_name)
+        input_file = os.path.join(get_data_dir(), TIF_file_name)
         # Open the files and append to 'temp' list
         open_file = rasterio.open(input_file)
         # Set values to floats to be able to be used in numpy
         open_file32 = open_file.read(1).astype('float32')
         # Set 0's to NaN in the arrays tro allow for division
-        open_file32[open_file32==0] = np.nan
+        open_file32[open_file32 == 0] = np.nan
         # Append raw data to temporary list
         temp_list.append(open_file32)
     return temp_list, open_file
 
+
 # Define function for exporting TIF files
 def export_tif(file_name, image_data, open_file, band_count):
     ## Set output file
-    output_file = os.path.join(data_dir, file_name)
+    output_file = os.path.join(get_data_dir(), file_name)
     ## Write the file to disk
-    image = rasterio.open(output_file, 'w', driver='Gtiff',
-                               height=open_file.height,
-                               width=open_file.height,
-                               count=band_count, crs=open_file.crs,
-                               transform=open_file.transform,
-                               dtype='float32')
+    image = rasterio.open(output_file,
+                          'w',
+                          driver='Gtiff',
+                          height=open_file.height,
+                          width=open_file.height,
+                          count=band_count,
+                          crs=open_file.crs,
+                          transform=open_file.transform,
+                          dtype='float32')
     index = 1
     for array in image_data:
         image.write(array, index)
         index += 1
     image.close()
-    print('**Successfully created', file_name, 'and saved to data directory.**')
+    print(f'**Successfully created {file_name} and saved to data directory.**')
 
-# Define function to make NDVI
-def make_ndvi():
-    # Set the bands required for analysis
-    ## 4 is visible red
-    ## 5 is near-infrared
-    band_list = ['4', '5']
-    # Get the files required to perform calculations
-    # and save them to disk
-    get_files(band_list)
-    print('Calculating scene...')
-    # Create list containing all band data
-    temp_list, open_file = create_list(band_list)
-    # Perform calculation for NDVI
-    band4 = temp_list[0] # red
-    band5 = temp_list[1] # near infrared
-    image_data = np.array([(band5-band4)/(band5+band4)])
-    # Write TIF to disk
-    band_count = 1
-    export_tif('NDVI.TIF', image_data, open_file, band_count)
-    open_file.close()
 
-def make_savi():
-    # Set the bands required for analysis
-    ## 4 is visible red
-    ## 5 is near-infrared
-    band_list = ['4', '5']
-    # Get the files required to perform calculations
-    # and save them to disk
-    get_files(band_list)
-    print('Calculating scene...')
-    # Create list containing all band data
-    temp_list, open_file = create_list(band_list)
-    # Perform calculation for SAVI
-    band4 = temp_list[0]  # red
-    band5 = temp_list[1]  # near infrared
-    image_data = np.array([((band5 - band4) / (band5 + band4 + 0.5)) * 1.5])
-    # Write TIF to disk
-    band_count = 1
-    export_tif('SAVI.TIF', image_data, open_file, band_count)
-    open_file.close()
-
-def make_rgb():
-    # Set the bands required for analysis
-    ## Band 4 is visible red
-    ## Band 3 is visible green
-    ## Band 2 is visible blue
-    band_list = ['4', '3', '2']
-    # Get the files required to perform calculations and save them to disk
-    get_files(band_list)
-    print('Calculating scene...')
-    # Create list containing all band data
-    temp_list, open_file = create_list(band_list)
-    # Create an array which holds the bands
-    band2 = temp_list[0]  # visible red
-    band3 = temp_list[1]  # visible green
-    band4 = temp_list[2]  # visible blue
-    image_data = np.array(temp_list)
-    # Write TIF to disk
-    band_count = 3
-    export_tif('RGB.TIF', image_data, open_file, band_count)
-    open_file.close()
-
-def make_nir():
-    # Set the bands required for analysis
-    ## Band 5 is near infrared
-    ## Band 4 is visible red
-    ## Band 3 is visible green
-    band_list = ['5', '4', '3']
-    # Get the files required to perform calculations
-    # and save them to disk
-    get_files(band_list)
-    print('Calculating scene...')
-    # Create list containing all band data
-    temp_list, open_file = create_list(band_list)
-    # Create an array which holds the bands
-    band2 = temp_list[0]  # near infrared
-    band3 = temp_list[1]  # visible red
-    band4 = temp_list[2]  # visible green
-    image_data = np.array(temp_list)
-    # Write TIF to disk
-    band_count = 3
-    export_tif('NIR.TIF', image_data, open_file, band_count)
-    open_file.close()
-
-main()
+if __name__ == '__main__':
+    main()
