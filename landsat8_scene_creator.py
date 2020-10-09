@@ -1,11 +1,12 @@
 # Date: 2020/10/08
 # Author: James Steele Howard
-# This script creates NDVIs, SAVIs, RBG, and NIR images using Landsat8 imagery.
+# This script creates NDVI, SAVI, RBG, and color infrared (NIR) images using Landsat8 imagery.
 
 import os
 import requests
 import rasterio
 import numpy as np
+import sys
 
 # Set the main directory
 main_dir = os.getcwd()
@@ -19,9 +20,17 @@ if not os.path.exists(data_dir):
 url_base = 'https://landsat-pds.s3.amazonaws.com/c1/L8/046/028/LC08_L1TP_046028_20200908_20200918_01_T1/LC08_L1TP_046028_20200908_20200918_01_T1_B'
 
 # Define main function that gets user input
-def main():
+def menu():
+    # Define menu dictionary
+    dispatcher = {
+        1: make_ndvi,
+        2: make_savi,
+        3: make_rgb,
+        4: make_nir,
+    }
+
     while True:
-        selection = int(input( '-------------------------------\n'
+        selection = int(input('-------------------------------\n'
                                'Select a calculation for the scene:\n'
                               '  1) Normalized Difference Vegetation (NDVI)\n'
                               '  2) Soil Adjusted Vegetation Index (SAVI)\n'
@@ -31,28 +40,14 @@ def main():
                               '-------------------------------\n'
                               'Input number for selection: '))
         # Process user input
-        if selection == 1:
-            print('NDVI selected.\n'
-                  '-------------------------------')
-            make_ndvi()
-        elif selection == 2:
-            print('SAVI selected.\n'
-                  '-------------------------------')
-            make_savi()
-        elif selection == 3:
-            print('RGB Image selected.\n'
-                  '-------------------------------')
-            make_rgb()
-        elif selection == 4:
-            print('False Color Infrared (NIR) selected.\n'
-                  '-------------------------------')
-            make_nir()
-        elif selection == 5:
-            print('Exiting.')
+        if selection != 5:
+            dispatcher[selection]()
+        if selection == 5:
+            print('Exiting...')
             break
 
 # Define function for obtaining files from internet resource
-# and save them to disk
+# and saving them to disk
 def get_files(band_list):
     # Request the file and save to disk
     for band in band_list:
@@ -62,19 +57,25 @@ def get_files(band_list):
         # Set TIF file URL to be requested
         band_url = url_base + TIF_file_name
         # Request file
-        print('Attempting to request band ' + str(band) + '.')
-        r = requests.get(band_url, allow_redirects=True)
-        # Check the status code
-        status = r.status_code
-        print('Request Status Code for band', band, 'is', status)
-        if status == 200:
-            # Save the file
-            print('Saving band ' + str(band) + ' TIF to data directory.')
-            with open(output_file, 'wb') as data:
-                data.write(r.content)
-        else:
-            print('Connection error.')
-
+        with open(output_file, 'wb') as f:
+            print('Downloading band ' + str(band) + '.')
+            response = requests.get(band_url, allow_redirects=True, stream=True)
+            total_length = response.headers.get('content-length')
+            if response.status_code !=200: # check status code of response
+                print('Unable to access URL. Check for correct URL and internet connection.')
+            else:
+                if total_length is None: # Write to disk without loading bar if no content in length header
+                    f.write(response.content)
+                else: # Display loading bar and write to disk
+                    dl = 0
+                    total_length = int(total_length)
+                    for data in response.iter_content(chunk_size=4096):
+                        dl += len(data)
+                        f.write(data)
+                        done = int(50 * dl / total_length)
+                        sys.stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50-done)) )
+                        sys.stdout.flush()
+                    sys.stdout.write('\n')
 # Define function for creating and return a list containing
 # all band data
 def create_list(band_list):
@@ -116,6 +117,8 @@ def export_tif(file_name, image_data, open_file, band_count):
 
 # Define function to make NDVI
 def make_ndvi():
+    print('NDVI selected.\n'
+          '-------------------------------')
     # Set the bands required for analysis
     ## 4 is visible red
     ## 5 is near-infrared
@@ -135,7 +138,10 @@ def make_ndvi():
     export_tif('NDVI.TIF', image_data, open_file, band_count)
     open_file.close()
 
+# Define function to make SAVI
 def make_savi():
+    print('SAVI selected.\n'
+          '-------------------------------')
     # Set the bands required for analysis
     ## 4 is visible red
     ## 5 is near-infrared
@@ -155,7 +161,10 @@ def make_savi():
     export_tif('SAVI.TIF', image_data, open_file, band_count)
     open_file.close()
 
+# Define function to make RGB
 def make_rgb():
+    print('RGB Image selected.\n'
+          '-------------------------------')
     # Set the bands required for analysis
     ## Band 4 is visible red
     ## Band 3 is visible green
@@ -176,7 +185,10 @@ def make_rgb():
     export_tif('RGB.TIF', image_data, open_file, band_count)
     open_file.close()
 
+# Define function to make NIR
 def make_nir():
+    print('False Color Infrared (NIR) selected.\n'
+          '-------------------------------')
     # Set the bands required for analysis
     ## Band 5 is near infrared
     ## Band 4 is visible red
@@ -198,4 +210,5 @@ def make_nir():
     export_tif('NIR.TIF', image_data, open_file, band_count)
     open_file.close()
 
-main()
+# Run the menu function
+menu()
