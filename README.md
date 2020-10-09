@@ -1,5 +1,5 @@
 # Landsat8_scene_calculator
- This script creates NDVIs, SAVIs, RBG, and NIR images using Landsat8 imagery.
+ This script creates NDVI, SAVI, RBG, and NIR images using Landsat8 imagery.
 
 # Scene Locator
 [RemotePixel.ca](https://search.remotepixel.ca)
