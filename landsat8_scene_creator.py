@@ -13,12 +13,18 @@ import requests
 # Set the base URL for the scene
 url_base = 'https://landsat-pds.s3.amazonaws.com/c1/L8/046/028/LC08_L1TP_046028_20200908_20200918_01_T1/LC08_L1TP_046028_20200908_20200918_01_T1_B'
 
-
 class Bands(Enum):
+    AEROSOL = 1
     BLUE = 2
     GREEN = 3
     RED = 4
     NEAR_IR = 5
+    SHORT_IR = 6
+    SHORT_IR2 = 7
+    PANCROMATIC = 8
+    CIRRUS = 9
+    LONG_IR = 10
+    LONG_IR2 = 11
 
 
 class Scenes(Enum):
@@ -26,6 +32,10 @@ class Scenes(Enum):
     SAVI = 1
     RGB = 2
     NIR = 3
+    SWI = 4
+    AG = 5
+    GEO = 6
+    BAT = 7
 
 
 def ndvi_bands(bands):
@@ -50,7 +60,12 @@ scenes_list = [
     ('RBG', 'Visible Spectrum', [Bands.RED, Bands.GREEN,
                                  Bands.BLUE], combine_bands, 3),
     ('NIR', 'False Color Infrared', [Bands.NEAR_IR, Bands.RED,
-                                     Bands.GREEN], combine_bands, 3)
+                                     Bands.GREEN], combine_bands, 3),
+    ('SWI', 'Short Wave Infrared', [Bands.SHORT_IR2, Bands.SHORT_IR, Bands.RED], combine_bands, 3),
+    ('AG', 'Agreculture', [Bands.SHORT_IR, Bands.NEAR_IR, Bands.BLUE], combine_bands, 3),
+    ('GEO', 'Geology', [Bands.SHORT_IR2, Bands.SHORT_IR, Bands.BLUE], combine_bands, 3),
+    ('BAT', 'Bathymic', [Bands.RED, Bands.GREEN, Bands.AEROSOL], combine_bands, 3),
+    
 ]
 
 
@@ -125,6 +140,7 @@ def main():
             break
 
         print(f'{scenes_list[selection][0]} selected.')
+        print(f'Bands required: {[b.name for b in scenes_list[selection][2]]}')
         print_hz_line()
         make_bands(Scenes(selection))
 
