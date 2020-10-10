@@ -11,7 +11,8 @@ import requests
 
 
 # Set the base URL for the scene
-url_base = 'https://landsat-pds.s3.amazonaws.com/c1/L8/046/028/LC08_L1TP_046028_20200908_20200918_01_T1/LC08_L1TP_046028_20200908_20200918_01_T1_B'
+#url_base = 'https://landsat-pds.s3.amazonaws.com/c1/L8/046/028/LC08_L1TP_046028_20200908_20200918_01_T1/LC08_L1TP_046028_20200908_20200918_01_T1_B'
+url_base = 'https://landsat-pds.s3.amazonaws.com/c1/L8/141/041/LC08_L1TP_141041_20201004_20201004_01_RT/LC08_L1TP_141041_20201004_20201004_01_RT_B'
 
 class Bands(Enum):
     AEROSOL = 1
@@ -57,7 +58,7 @@ scenes_list = [
      ndvi_bands, 1),
     ('SAVI', 'Soil Adjusted Vegetation Index', [Bands.RED,
                                                 Bands.NEAR_IR], savi_bands, 1),
-    ('RBG', 'Visible Spectrum', [Bands.RED, Bands.GREEN,
+    ('RGB', 'Visible Spectrum', [Bands.RED, Bands.GREEN,
                                  Bands.BLUE], combine_bands, 3),
     ('NIR', 'False Color Infrared', [Bands.NEAR_IR, Bands.RED,
                                      Bands.GREEN], combine_bands, 3),
@@ -112,13 +113,19 @@ def save_file_from_web(url, filename):
     print(f'Downloading file ...')
     cols, _ = os.get_terminal_size()
     downloaded = 0
-    with open(filename, 'wb') as writer:
-        for data in r.iter_content(chunk_size=1024):
-            writer.write(data)
-            downloaded += 1024
-            perc = int(100 * downloaded / int(size))
-            char_len = (downloaded) * (cols - 10) / int(size)
-            print('#' * int(char_len), f'{perc}%', end='\r')
+    try:
+        with open(filename, 'wb') as writer:
+            for data in r.iter_content(chunk_size=1024):
+                writer.write(data)
+                downloaded += 1024
+                perc = int(100 * downloaded / int(size))
+                char_len = (downloaded) * (cols - 10) / int(size)
+                print('#' * int(char_len), f'{perc}%', end='\r')
+    except requests.exceptions.ChunkedEncodingError:
+        print('Error while downloding, Try again..')
+        # delete the incompletely downloaded file.
+        if os.path.exists(filename):
+            os.remove(filename)
 
     print('\nDownload Complete')
     return True
@@ -126,23 +133,25 @@ def save_file_from_web(url, filename):
 
 # Define main function that gets user input
 def main():
-    while True:
+    print_hz_line()
+    print('Select a calculation scene (type more than one number to select multiple):')
+    for i, scene in enumerate(scenes_list):
+        print(f'{i+1}) {scene[1]} ({scene[0]})')
+    print('\n0) *Exit*')
+    print_hz_line()
+    # take input
+    selection = input(">")
+    if int(selection) == 0:
+        print('Existing')
+        return
+    sels = [int(s)-1 for s in list(selection.strip())]
+    print(f'Scenes Selected:{[scenes_list[s][0] for s in sels]}')
+    print_hz_line()
+    for s in sels:
+        print(f'Generating {scenes_list[s][1]} tiff.')
+        print(f'Bands required: {[b.name for b in scenes_list[s][2]]}')
         print_hz_line()
-        print('Select a calculation scene:')
-        for i, scene in enumerate(scenes_list):
-            print(f'{i+1}) {scene[1]} ({scene[0]})')
-        print('5) *Exit*')
-        print_hz_line()
-        # take input
-        selection = int(input()) - 1
-        if selection == 4:
-            print('Existing')
-            break
-
-        print(f'{scenes_list[selection][0]} selected.')
-        print(f'Bands required: {[b.name for b in scenes_list[selection][2]]}')
-        print_hz_line()
-        make_bands(Scenes(selection))
+        make_bands(Scenes(s))
 
 
 # Define function for obtaining files from internet resource
@@ -208,6 +217,7 @@ def export_tif(file_name, image_data, open_file, band_count):
         index += 1
     image.close()
     print(f'**Successfully created {file_name} and saved to data directory.**')
+    print_hz_line()
 
 
 if __name__ == '__main__':
