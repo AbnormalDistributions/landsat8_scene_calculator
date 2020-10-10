@@ -4,7 +4,7 @@
 
 import os
 from enum import Enum
-
+import time
 import numpy as np
 import rasterio
 import requests
@@ -40,13 +40,11 @@ class Scenes(Enum):
 
 
 def ndvi_bands(bands):
-    return np.array([(bands[1] - bands[0]) / (bands[1] + bands[0])])
+    return np.array((bands[1] - bands[0]) / (bands[1] + bands[0]))
 
 
 def savi_bands(bands):
-    return np.array([
-        ((bands[1] - bands[0]) / (bands[1] + bands[0] + 0.5)) * 1.5
-    ])
+    return np.array(((bands[1] - bands[0]) / (bands[1] + bands[0] + 0.5)) * 1.5)
 
 
 def combine_bands(bands):
@@ -73,13 +71,16 @@ scenes_list = [
 def make_bands(scene):
     bands_list = scenes_list[scene.value][2]
     check_bands_exist(bands_list)
-    bands, open_file = create_list(bands_list)
+    if scene.value > 1:
+        stack_tiffs(bands_list, os.path.join(get_data_dir(),f'{scene.name}.TIF'))
+        return
+
+    bands, meta = get_bands(bands_list)
+    meta.update(dtype='float32')
     band_func = scenes_list[scene.value][3]
-    band_count = scenes_list[scene.value][4]
     print(f'Calculating {scene.name} scene from bands')
-    image_data = band_func(bands)
-    export_tif(f'{scene.name}.TIF', image_data, open_file, band_count)
-    open_file.close()
+    band = band_func(bands)
+    export_tif(f'{scene.name}.TIF', band, meta)
 
 
 def print_hz_line():
@@ -147,11 +148,14 @@ def main():
     sels = [int(s)-1 for s in list(selection.strip())]
     print(f'Scenes Selected:{[scenes_list[s][0] for s in sels]}')
     print_hz_line()
+    t1 = time.time()
     for s in sels:
         print(f'Generating {scenes_list[s][1]} tiff.')
         print(f'Bands required: {[b.name for b in scenes_list[s][2]]}')
         print_hz_line()
         make_bands(Scenes(s))
+    t2 = time.time()
+    print(f'Overall process completed in {t2-t1:.3f} seconds')
 
 
 # Define function for obtaining files from internet resource
@@ -177,47 +181,42 @@ def download_band(band):
 
 # Define function for creating and return a list containing
 # all band data
-def create_list(band_list):
+def get_bands(band_list):
     # Read in the TIF files from disk.
     ## Initialize temp list
     temp_list = []
-    counter = 0
     for band in band_list:
         TIF_file_name = f'{band.name}.TIF'
-        # Set location for file to be imported
         input_file = os.path.join(get_data_dir(), TIF_file_name)
         # Open the files and append to 'temp' list
-        open_file = rasterio.open(input_file)
-        # Set values to floats to be able to be used in numpy
-        open_file32 = open_file.read(1).astype('float32')
-        # Set 0's to NaN in the arrays tro allow for division
-        open_file32[open_file32 == 0] = np.nan
-        # Append raw data to temporary list
-        temp_list.append(open_file32)
-    return temp_list, open_file
+        with rasterio.open(input_file) as open_file:
+            meta = open_file.meta
+            open_file32 = open_file.read(1).astype('float32')
+            # Set 0's to NaN in the arrays tro allow for division
+            open_file32[open_file32 == 0] = np.nan
+            temp_list.append(open_file32)
+    return temp_list, meta
 
 
 # Define function for exporting TIF files
-def export_tif(file_name, image_data, open_file, band_count):
-    ## Set output file
+def export_tif(file_name, band, meta):
     output_file = os.path.join(get_data_dir(), file_name)
-    ## Write the file to disk
-    image = rasterio.open(output_file,
-                          'w',
-                          driver='Gtiff',
-                          height=open_file.height,
-                          width=open_file.height,
-                          count=band_count,
-                          crs=open_file.crs,
-                          transform=open_file.transform,
-                          dtype='float32')
-    index = 1
-    for array in image_data:
-        image.write(array, index)
-        index += 1
-    image.close()
+    with rasterio.open(output_file, 'w', **meta) as out:
+        out.write_band(1,band)
     print(f'**Successfully created {file_name} and saved to data directory.**')
     print_hz_line()
+
+def stack_tiffs(bands_list, filename):
+    file_list = [os.path.join(get_data_dir(),f'{band.name}.TIF') for band in bands_list]
+    # Read metadata of first file
+    with rasterio.open(file_list[0]) as src0:
+        meta = src0.meta
+    meta.update(count = len(file_list))
+    # Read each layer and write it to stack
+    with rasterio.open(filename, 'w', **meta) as dst:
+        for i, layer in enumerate(file_list, start=1):
+            with rasterio.open(layer) as src1:
+                dst.write_band(i, src1.read(1))
 
 
 if __name__ == '__main__':
