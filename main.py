@@ -1,8 +1,16 @@
-# Date: 2020/10/10
-# Initial Author: James Steele Howard
-# Contributors: Gaurav Atreya
-# This script creates NDVIs, SAVIs, RBG, and NIR images using Landsat8 imagery.
+'''
+Date: 2020/10/10
+Initial Author: James Steele Howard
+Contributors: Gaurav Atreya
 
+This script creates GeoTIFF files of the following:
+- Normalized Difference Vegetation Index
+- Soil Adjusted Vegetation Index
+- Visible Spectrum (Natural Color)
+- Short Wave Infrared
+- Agriculture
+- Bathymetric
+'''
 import os
 from enum import Enum
 import time

@@ -1,8 +1,8 @@
-![NIR](https://github.com/AbnormalDistributions/landsat8_scene_calculator/blob/main/neworleans.png)
+![NIR](https://github.com/AbnormalDistributions/landsat8_scene_calculator/blob/main/new_orleans.png)
 
 # Landsat8 Scene Calculator
 This script creates GeoTIFF files of the following:
-* Nasalized Difference Vegetation Index
+* Normalized Difference Vegetation Index
 * Soil Adjusted Vegetation Index
 * Visible Spectrum (Natural Color)
 * Short Wave Infrared
@@ -14,7 +14,7 @@ This script creates GeoTIFF files of the following:
 2. Change the url to *url_base* minus the last character of the url and file extension
 3. Run the script. 
 
-See Resources for more information on the images that are created.
+See Resources for more information on the GeoTIFFs that are created.
 
 # Scene Locator
 [RemotePixel.ca](https://search.remotepixel.ca)
