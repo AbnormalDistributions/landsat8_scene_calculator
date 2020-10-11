@@ -43,9 +43,9 @@ class Scenes(Enum):
     RGB = 2
     NIR = 3
     SWI = 4
-    AG = 5
+    AGR = 5
     GEO = 6
-    BAT = 7
+    BMC = 7
 
 
 def calc_ndvi_bands(bands):
@@ -69,11 +69,9 @@ def calc_savi_bands(bands):
     :rtype: np.darray
 
     """
-    
+
     return np.array(
-        ((bands[1] - bands[0]) / (bands[1] + bands[0] + 0.5)) * 1.5)
-
-
+        (((bands[1] - bands[0]) / (bands[1] + bands[0] + 0.5)) * 1.5))
 
 
 # Define scene names and bands required for calculations
@@ -88,9 +86,9 @@ scenes_list = [
      [Bands.NEAR_IR, Bands.RED, Bands.GREEN]),
     ('SWI', 'Short Wave Infrared',
      [Bands.SHORT_IR2, Bands.SHORT_IR1, Bands.RED]),
-    ('AG', 'Agriculture', [Bands.SHORT_IR1, Bands.NEAR_IR, Bands.BLUE]),
+    ('AGR', 'Agriculture', [Bands.SHORT_IR1, Bands.NEAR_IR, Bands.BLUE]),
     ('GEO', 'Geology', [Bands.SHORT_IR2, Bands.SHORT_IR1, Bands.BLUE]),
-    ('BAT', 'Bathymetric', [Bands.RED, Bands.GREEN, Bands.AEROSOL])
+    ('BMC', 'Bathymetric', [Bands.RED, Bands.GREEN, Bands.AEROSOL])
 ]
 
 
@@ -110,11 +108,11 @@ def get_data_dir():
 
 
 def get_band_file(band):
-    return os.path.join(get_data_dir,f'{band.value}-{band.name}.TIF')
+    return os.path.join(get_data_dir(), f'{band.value}-{band.name}.TIF')
 
 
 def get_scene_file(scene):
-    return os.path.join(get_data_dir,f'{scene.name}.TIF')
+    return os.path.join(get_data_dir(), f'{scene.name}.TIF')
 
 
 def print_hz_line():
@@ -151,7 +149,6 @@ def main():
         print_hz_line()
     t2 = time.time()
     print(f'Overall process completed in {t2 - t1:.3f} seconds')
-
 
 
 def download_band(band):
@@ -275,6 +272,7 @@ def stack_tiffs(bands_list, filename):
         for i, layer in enumerate(file_list, start=1):
             with rasterio.open(layer) as src1:
                 dst.write_band(i, src1.read(1))
+    print(f'Successfully created: {filename}')
 
 
 def make_bands(scene):
@@ -299,7 +297,7 @@ def make_bands(scene):
     if scene == Scenes.NDVI:
         band = calc_ndvi_bands(bands)
     elif scene == Scenes.SAVI:
-        band = calc_savi_bands
+        band = calc_savi_bands(bands)
     export_tif(get_scene_file(scene), band, meta)
 
 
@@ -317,7 +315,7 @@ def export_tif(file_name, band, meta):
 
     with rasterio.open(file_name, 'w', **meta) as out:
         out.write_band(1, band)
-    print(f'**Successfully created {file_name} and saved to data directory.**')
+    print(f'Successfully created: {file_name}')
 
 
 if __name__ == '__main__':
