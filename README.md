@@ -12,7 +12,7 @@ This script creates GeoTIFF files of the following:
 
 # To Use:
 1. Find the scene you would like on [RemotePixel.ca](https://search.remotepixel.ca).
-2. Change the url to *url_base* minus the last character of the url and file extension
+2. Change the url to *url_base* minus the last character of the url and file extension (TODO: make it interactive)
 3. Run the script. 
 
 See Resources for more information on the GeoTIFFs that are created.
@@ -28,3 +28,8 @@ See Resources for more information on the GeoTIFFs that are created.
 
 # Licensing
 Code licensed under [MIT License](http://opensource.org/licenses/mit-license.html)
+
+# Contributors 
+* [James Steele Howard](https://github.com/AbnormalDistributions) - Original Author
+* [Gaurav Atreya](https://github.com/Atreyagaurav)
+

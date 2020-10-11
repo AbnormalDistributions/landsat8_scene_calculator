@@ -17,10 +17,12 @@ import time
 import numpy as np
 import rasterio
 import requests
+import sys
 
+#TODO: make this interactive, maybe there are some api to get the url.
 url_base = 'https://landsat-pds.s3.amazonaws.com/c1/L8/046/028/LC08_L1TP_046028_20200908_20200918_01_T1/LC08_L1TP_046028_20200908_20200918_01_T1_B'
 
-# Create enumeration for bands
+
 class Bands(Enum):
     AEROSOL = 1
     BLUE = 2
@@ -34,7 +36,7 @@ class Bands(Enum):
     LONG_IR1 = 10
     LONG_IR2 = 11
 
-# Create enumeration for scene type
+
 class Scenes(Enum):
     NDVI = 0
     SAVI = 1
@@ -45,47 +47,96 @@ class Scenes(Enum):
     GEO = 6
     BAT = 7
 
+
 def calc_ndvi_bands(bands):
+    """calculates the ndv index band 
+
+    :param bands: list of bands
+    :type bands: np.darray
+    :returns: single band of sav index
+    :rtype: np.darray
+
+    """
     return np.array((bands[1] - bands[0]) / (bands[1] + bands[0]))
 
-def calc_savi_bands(bands):
-    return np.array(((bands[1] - bands[0]) / (bands[1] + bands[0] + 0.5)) * 1.5)
 
-def combine_bands(bands):
-    return np.array(bands)
+def calc_savi_bands(bands):
+    """calculates the sav index band
+
+    :param bands: list of bands
+    :type bands: np.darray
+    :returns: single band of sav index
+    :rtype: np.darray
+
+    """
+    
+    return np.array(
+        ((bands[1] - bands[0]) / (bands[1] + bands[0] + 0.5)) * 1.5)
+
+
+
 
 # Define scene names and bands required for calculations
 scenes_list = [
     # short name, full name, bands required for calculation, calculation function, band count
-    ('NDVI', 'Normalized Difference Vegetation Index', [Bands.RED, Bands.NEAR_IR],
-                                                calc_ndvi_bands, 1),
-    ('SAVI', 'Soil Adjusted Vegetation Index', [Bands.RED, Bands.NEAR_IR], calc_savi_bands, 1),
-    ('RGB', 'Visible Spectrum (Natural Color)', [Bands.RED, Bands.GREEN, Bands.BLUE],
-                                                combine_bands, 3),
-    ('NIR', 'Near Infrared Composite (Color Infrared)', [Bands.NEAR_IR, Bands.RED, Bands.GREEN],
-                                                combine_bands, 3),
-    ('SWI', 'Short Wave Infrared', [Bands.SHORT_IR2, Bands.SHORT_IR1, Bands.RED],
-                                                combine_bands, 3),
-    ('AG', 'Agriculture', [Bands.SHORT_IR1, Bands.NEAR_IR, Bands.BLUE], combine_bands, 3),
-    ('GEO', 'Geology', [Bands.SHORT_IR2, Bands.SHORT_IR1, Bands.BLUE], combine_bands, 3),
-    ('BAT', 'Bathymetric', [Bands.RED, Bands.GREEN, Bands.AEROSOL], combine_bands, 3)
-    ]
+    ('NDVI', 'Normalized Difference Vegetation Index',
+     [Bands.RED, Bands.NEAR_IR]),
+    ('SAVI', 'Soil Adjusted Vegetation Index', [Bands.RED, Bands.NEAR_IR]),
+    ('RGB', 'Visible Spectrum (Natural Color)',
+     [Bands.RED, Bands.GREEN, Bands.BLUE]),
+    ('NIR', 'Near Infrared Composite (Color Infrared)',
+     [Bands.NEAR_IR, Bands.RED, Bands.GREEN]),
+    ('SWI', 'Short Wave Infrared',
+     [Bands.SHORT_IR2, Bands.SHORT_IR1, Bands.RED]),
+    ('AG', 'Agriculture', [Bands.SHORT_IR1, Bands.NEAR_IR, Bands.BLUE]),
+    ('GEO', 'Geology', [Bands.SHORT_IR2, Bands.SHORT_IR1, Bands.BLUE]),
+    ('BAT', 'Bathymetric', [Bands.RED, Bands.GREEN, Bands.AEROSOL])
+]
 
-# Define function fo printing horizontal line for menus
+
+def get_data_dir():
+    """get the data directory where TIFFs are stored.
+
+    :returns: full path to data directory
+    :rtype: string
+
+    """
+    main_dir = os.getcwd()
+    data_dir = os.path.join(main_dir, 'data')
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+        print('data_dir did not exist. New data directory created.')
+    return (data_dir)
+
+
+def get_band_file(band):
+    return os.path.join(get_data_dir,f'{band.value}-{band.name}.TIF')
+
+
+def get_scene_file(scene):
+    return os.path.join(get_data_dir,f'{scene.name}.TIF')
+
+
 def print_hz_line():
+    """prints a horizontal line in console
+    """
     cols = 50
     print('-' * cols)
 
+
 def main():
-    # Display the main menu
+    """main interactive interface
+    """
     print_hz_line()
-    print('Select a calculation type (input more than on number to select multiple):')
+    print(
+        'Select a calculation type (input more than on number to select multiple):'
+    )
     for i, scene in enumerate(scenes_list):
         print(f'{i + 1}: ({scene[0]}) - {scene[1]}')
     print('\n0: *Exit*')
     print_hz_line()
     # Take Input and process selection
-    selection =input('>')
+    selection = input('>')
     if int(selection) == 0:
         print('Exiting...')
         return
@@ -96,58 +147,63 @@ def main():
     for s in sels:
         print(f'Generating {scenes_list[s][1]} TIFF.')
         print(f'Bands required: {[b.name for b in scenes_list[s][2]]}')
-        print_hz_line()
         make_bands(Scenes(s))
+        print_hz_line()
     t2 = time.time()
     print(f'Overall process completed in {t2 - t1:.3f} seconds')
 
-# Define function for setting creating the data directory if it doesn't exist
-def get_data_dir():
-    # Set the main directory
-    main_dir = os.getcwd()
-    # Set and crate data directory if it doesn't exist
-    data_dir = os.path.join(main_dir, 'data')
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-        print('data_dir did not exist. New data directory created.')
-    return (data_dir)
 
-# Define function for obtaining file from internet resource
-# and save it to disk
+
 def download_band(band):
-    TIF_file_name = f'{band.name}.TIF'
-    output_file = os.path.join(get_data_dir(), TIF_file_name)
+    """function for obtaining file from internet resource and save it to
+disk
+
+    :param band: band to download to disk
+    :type band: .Bands enum
+
+    """
+    output_file = get_band_file(band)
     # Set TIF file URL to be requested
     band_url = f'{url_base}{band.value}.TIF'
     # Request file
     print(f'Getting {band.name} from web.')
     save_file_from_web(band_url, output_file)
 
-# Define function to see if files have been files are present on disk
-# and save them to disk if not present
+
 def check_bands_exist(bands_list):
+    """function to see if files have been files are present on disk and
+save them to disk if not present
+
+    :param bands_list: list of bands to check
+    :type bands_list: list of .Bands enum
+
+    """
+
     for band in bands_list:
-        TIF_file_name = f'{band.name}.TIF'
-        output_file = os.path.join(get_data_dir(), TIF_file_name)
-        if not os.path.exists(output_file):
-            print(f'{band.name} band not found locally.')
+        band_file = get_band_file(band)
+        if not os.path.exists(band_file):
+            print(f'{band.name} band not found in local directory.')
             download_band(band)
         else:
-            print(f'{band.name} band found locally.')
+            print(f'{band.name} band loaded from local directory.')
 
-# Define function for retrieving files from URL and writing them to disk
+
 def save_file_from_web(url, filename):
-    # Request file
+    """function for retrieving files from URL and writing them to disk
+
+    :param url: url of the file on web
+    :type url: string
+    :param filename: name of the file to save on disk
+    :type filename: string
+    :returns: True if success False if not
+    :rtype: bool
+    """
     r = requests.get(url, stream=True, allow_redirects=True)
-    # Display error if there is a problem with the connection
-    if r.status_code !=200:
+    if r.status_code != 200:
         print('Connection Error.')
         return False
-    # Save the TIFF to disk
-    # Determine content length
+
     size = r.headers.get('Content-Length')
-    # Skip loading animation if no content length not present
-    # and write to disk
     if size == None:
         print('Download file size unknown. Downloading...')
         with open(filename, 'wb') as writer:
@@ -155,8 +211,6 @@ def save_file_from_web(url, filename):
         print('Download Complete)')
         return True
     print(f'Downloading file...')
-    # Display loading animation if cont length present
-    # and write to disk
     cols = 50
     downloaded = 0
     try:
@@ -167,23 +221,30 @@ def save_file_from_web(url, filename):
                 perc = int(100 * downloaded / int(size))
                 char_len = (downloaded) * (cols - 10) / int(size)
                 print('#' * int(char_len), f'{perc}%', end='\r')
-    except requests.exceptions.ChunkedEncodingError:
-        print('Error while downloading. Try again...')
-        # Delete the incompletely downloaded file
+    except (KeyboardInterrupt, requests.exceptions.ChunkedEncodingError) as e:
+        print(f'Download Interupted.{e} \nTry again...')
         if os.path.exists(filename):
             os.remove(filename)
-    print('\nDownload Complete')
+        sys.exit(1)
+    print('\nDownload Completed')
     return True
 
-# Define function for creating and return a list containing
-# all band data
+
 def get_bands(band_list):
+    """function for creating and return a list containing all band data
+
+    :param band_list: list of bands to load
+    :type band_list: list of Bands enum
+    :returns: list of bands and metadata
+    :rtype: tuple (bands_list, metadata)
+
+    """
+
     # Read in the TIF files from disk.
     ## Initialize temp list
     temp_list = []
     for band in band_list:
-        TIF_file_name = f'{band.name}.TIF'
-        input_file = os.path.join(get_data_dir(), TIF_file_name)
+        input_file = get_band_file(band)
         # Open the files and append to 'temp' list
         with rasterio.open(input_file) as open_file:
             meta = open_file.meta
@@ -193,39 +254,71 @@ def get_bands(band_list):
             temp_list.append(open_file32)
     return temp_list, meta
 
+
 def stack_tiffs(bands_list, filename):
-    file_list = [os.path.join(get_data_dir(), f'{band.name}.TIF') for band in bands_list]
-    # Read metadata of first file
+    """stacks the tiffs on band list to make a merged tiff
+
+    :param bands_list: list of bands to merge 
+    :type bands_list: Bands enum
+    :param filename: name of the file to save the merged tiff
+    :type filename: string
+
+    """
+
+    file_list = [get_band_file(band) for band in bands_list]
+    # only metadata of first file is read to copy to the merge tiff
     with rasterio.open(file_list[0]) as src0:
         meta = src0.meta
     meta.update(count=len(file_list))
-    # Read each layer and write it to stack
+
     with rasterio.open(filename, 'w', **meta) as dst:
         for i, layer in enumerate(file_list, start=1):
             with rasterio.open(layer) as src1:
                 dst.write_band(i, src1.read(1))
 
+
 def make_bands(scene):
+    """makes bands for the scene and saves it.
+
+    :param scene: scene to be created/calculated
+    :type scene: Scenes enum
+
+    """
+
     bands_list = scenes_list[scene.value][2]
     check_bands_exist(bands_list)
+
+    #enum scenes has merger scenes except for 0 and 1
     if scene.value > 1:
-        stack_tiffs(bands_list, os.path.join(get_data_dir(), f'{scene.name}.TIF'))
+        stack_tiffs(bands_list, get_scene_file(scene))
         return
 
     bands, meta = get_bands(bands_list)
     meta.update(dtype='float32')
-    band_func = scenes_list[scene.value][3]
     print(f'Calculating {scene.name} scene from bands.')
-    band = band_func(bands)
-    export_tif(f'{scene.name}.TIF', band, meta)
+    if scene == Scenes.NDVI:
+        band = calc_ndvi_bands(bands)
+    elif scene == Scenes.SAVI:
+        band = calc_savi_bands
+    export_tif(get_scene_file(scene), band, meta)
 
-# Define function for exporting TIF files
+
 def export_tif(file_name, band, meta):
-    output_file = os.path.join(get_data_dir(), file_name)
-    with rasterio.open(output_file, 'w', **meta) as out:
+    """function to export a band to tiff file.
+
+    :param file_name: filename to be saved
+    :type file_name: string
+    :param band: band data to be saved
+    :type band: numpy.darray
+    :param meta: metadata of the file
+    :type meta: python Dictionary
+
+    """
+
+    with rasterio.open(file_name, 'w', **meta) as out:
         out.write_band(1, band)
     print(f'**Successfully created {file_name} and saved to data directory.**')
-    print_hz_line()
+
 
 if __name__ == '__main__':
     main()
