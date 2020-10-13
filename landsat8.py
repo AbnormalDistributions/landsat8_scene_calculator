@@ -26,8 +26,7 @@ def download_file(url, filepath, replace=False):
     c.setopt(pycurl.URL, url)
     c.setopt(pycurl.NOPROGRESS, 0)
     if os.path.exists(part_file) and replace == False:
-        #resume is untested
-        print('Previously Downloaded part found, resuming')
+        print('Previously Downloaded part found.')
         wmode = 'ab'
         c.setopt(pycurl.RESUME_FROM, os.path.getsize(part_file))
     else:
