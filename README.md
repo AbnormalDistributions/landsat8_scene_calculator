@@ -23,18 +23,18 @@ This script creates GeoTIFF files of the following:
 See Resources for more information on the GeoTIFFs that are created.
 
 
-# Area of Interest Locator
+# Area of Interest Locator:
 [RemotePixel.ca](https://search.remotepixel.ca)
 
-# Resources
+# Resources:
 * [(NDVI) Normalized Difference Vegetation Index ](https://www.usgs.gov/core-science-systems/nli/landsat/landsat-normalized-difference-vegetation-index)
 * [(SAVI) Soil Adjusted Vegetation Index](https://www.usgs.gov/core-science-systems/nli/landsat/landsat-soil-adjusted-vegetation-index)
 * [(Combinations) Landsat 8 Bands and Band Combinations](https://gisgeography.com/landsat-8-bands-combinations/)
 
-# Licensing
+# Licensing:
 Code licensed under [MIT License](http://opensource.org/licenses/mit-license.html)
 
-# Contributors 
+# Contributors: 
 * [James Steele Howard](https://github.com/AbnormalDistributions) - Original Author
 * [Gaurav Atreya](https://github.com/Atreyagaurav)
 
