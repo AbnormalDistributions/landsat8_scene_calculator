@@ -23,7 +23,7 @@ This script creates GeoTIFF files of the following:
 See Resources for more information on the GeoTIFFs that are created.
 
 
-# Scene Locator
+# Area of Interest Locator
 [RemotePixel.ca](https://search.remotepixel.ca)
 
 # Resources
