@@ -3,38 +3,43 @@
 # Landsat8 Scene Calculator
 
 This script creates GeoTIFF files of the following:
-
-| Calculation                                | Formula / Band Combinations                           |
-| ---                                        | ---                                                   |
-| Normalized Difference Vegetation Index     | (Band 5 – Band 4) / (Band 5 + Band 4)                 |
-| Soil Adjusted Vegetation Index             | ((Band 5 – Band 4) / (Band 5 + Band 4 + 0.5)) * (1.5) |
-| Visible Spectrum (Natural Color) Composite | Bands: 4, 3, 2                                        |
-| Color / Near Infrared Composite            | Bands: 5, 4, 3                                        |
-| Short-Wave Infrared Composite              | Bands: 7, 6, 4                                        |
-| Agriculture Composite                      | Bands: 6, 5, 2                                        |
-| Geology Composite                          | Bands: 7, 6, 2                                        |
-| Bathymetric Composite                      | Bands: 4, 3, 1                                        |
+- Normalized Difference Vegetation Index
+- Soil Adjusted Vegetation Index
+- Visible Spectrum
+- Near Infrared Composite
+- Short Wave Infrared
+- Agriculture
+- Geology
+- Bathymetric
 
 # To Use:
-1. Find the aread of interest (AOI) using [RemotePixel.ca](https://search.remotepixel.ca).
-2. Change *url_base* to the url of the AOI minus the last character of the url and file extension (TODO: make it interactive)
-3. Run the script.
+```
+git clone https://github.com/AbnormalDistributions/landsat8_scene_calculator.git
+cd landsat8_scene_calculator
+pip install .
+l8calc.py -h
+
+# Example Usage
+l8calc.py -s 1237 -u https://landsat-pds.s3.amazonaws.com/c1/L8/046/028/LC08_L1TP_046028_20200908_20200918_01_T1/LC08_L1TP_046028_20200908_20200918_01_T1_B1.TIF -v
+
+```
 
 See Resources for more information on the GeoTIFFs that are created.
 
 
-# Area of Interest Locator:
+# Scene Locator
 [RemotePixel.ca](https://search.remotepixel.ca)
 
-# Resources:
+# Resources
 * [(NDVI) Normalized Difference Vegetation Index ](https://www.usgs.gov/core-science-systems/nli/landsat/landsat-normalized-difference-vegetation-index)
 * [(SAVI) Soil Adjusted Vegetation Index](https://www.usgs.gov/core-science-systems/nli/landsat/landsat-soil-adjusted-vegetation-index)
-* [(Combinations) Landsat 8 Bands and Band Combinations](https://gisgeography.com/landsat-8-bands-combinations/)
+* [(Other Combinations) Landsat 8 Bands and Band Combinations](https://gisgeography.com/landsat-8-bands-combinations/)
 
-# Licensing:
+# Licensing
 Code licensed under [MIT License](http://opensource.org/licenses/mit-license.html)
 
-# Contributors: 
+# Contributors 
 * [James Steele Howard](https://github.com/AbnormalDistributions) - Original Author
 * [Gaurav Atreya](https://github.com/Atreyagaurav)
+* [and_viceversa](https://github.com/and-viceversa)
 
