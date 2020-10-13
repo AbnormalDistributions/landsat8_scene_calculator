@@ -16,7 +16,7 @@ This script creates GeoTIFF files of the following:
 | Bathymetric Composite                      | Bands: 4, 3, 1                                        |
 
 # To Use:
-1. Find the scene you would like on [RemotePixel.ca](https://search.remotepixel.ca).
+1. Find the aread of interest using [RemotePixel.ca](https://search.remotepixel.ca).
 2. Change the url to *url_base* minus the last character of the url and file extension (TODO: make it interactive)
 3. Run the script.
 
