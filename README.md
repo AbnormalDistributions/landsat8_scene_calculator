@@ -9,7 +9,7 @@ This script creates GeoTIFF files of the following:
 | Normalized Difference Vegetation Index     | (Band 5 – Band 4) / (Band 5 + Band 4)                 |
 | Soil Adjusted Vegetation Index             | ((Band 5 – Band 4) / (Band 5 + Band 4 + 0.5)) * (1.5) |
 | Visible Spectrum (Natural Color) Composite | Bands: 4, 3, 2                                        |
-| Color / Infrared Composite                 | Bands: 5, 4, 3                                        |
+| Color / Near Infrared Composite            | Bands: 5, 4, 3                                        |
 | Short-Wave Infrared Composite              | Bands: 7, 6, 4                                        |
 | Agriculture Composite                      | Bands: 6, 5, 2                                        |
 | Geology Composite                          | Bands: 7, 6, 2                                        |
