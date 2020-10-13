@@ -19,8 +19,8 @@ import rasterio
 import requests
 import sys
 
-#TODO: make this interactive, maybe there are some api to get the url.
-url_base = 'https://landsat-pds.s3.amazonaws.com/c1/L8/046/028/LC08_L1TP_046028_20200908_20200918_01_T1/LC08_L1TP_046028_20200908_20200918_01_T1_B'
+import landsat8
+import customIO
 
 
 class Bands(Enum):
@@ -37,7 +37,7 @@ class Bands(Enum):
     LONG_IR2 = 11
 
 
-class Scenes(Enum):
+class ImageType(Enum):
     NDVI = 0
     SAVI = 1
     RGB = 2
@@ -74,8 +74,8 @@ def calc_savi_bands(bands):
         (((bands[1] - bands[0]) / (bands[1] + bands[0] + 0.5)) * 1.5))
 
 
-# Define scene names and bands required for calculations
-scenes_list = [
+# Define image names and bands required for calculations
+images_list = [
     # short name, full name, bands required for calculation, calculation function, band count
     ('NDVI', 'Normalized Difference Vegetation Index',
      [Bands.RED, Bands.NEAR_IR]),
@@ -92,82 +92,49 @@ scenes_list = [
 ]
 
 
-def get_data_dir():
-    """get the data directory where TIFFs are stored.
-
-    :returns: full path to data directory
-    :rtype: string
-
-    """
-    main_dir = os.getcwd()
-    data_dir = os.path.join(main_dir, 'data')
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-        print('data_dir did not exist. New data directory created.')
-    return (data_dir)
-
-
-def get_band_file(band):
-    return os.path.join(get_data_dir(), f'{band.value}-{band.name}.TIF')
-
-
-def get_scene_file(scene):
-    return os.path.join(get_data_dir(), f'{scene.name}.TIF')
+def get_image_file(scene, image):
+    return os.path.join(landsat8.get_data_dir(scene), f'{image.name}.TIF')
 
 
 def print_hz_line():
     """prints a horizontal line in console
     """
-    cols = 50
+    cols, _ = os.get_terminal_size()
     print('-' * cols)
 
 
 def main():
     """main interactive interface
     """
+    print('Select the scene where you want to work')
+    scene = landsat8.choose_scene()
     print_hz_line()
     print(
         'Select a calculation type (input more than on number to select multiple):'
     )
-    for i, scene in enumerate(scenes_list):
-        print(f'{i + 1}: ({scene[0]}) - {scene[1]}')
+    for i, image in enumerate(images_list):
+        print(f'{i + 1}: ({image[0]}) - {image[1]}')
     print('\n0: *Exit*')
     print_hz_line()
     # Take Input and process selection
-    selection = input('>')
-    if int(selection) == 0:
+    selection = customIO._input('output tiffs:', int)
+    if selection == 0:
         print('Exiting...')
         return
-    sels = [int(s) - 1 for s in list(selection.strip())]
-    print(f'Scenes Selected: {[scenes_list[s][0] for s in sels]}')
+    sels = [int(s) - 1 for s in list(str(selection).strip())]
+    print(f'ImageType Selected: {[images_list[s][0] for s in sels]}')
     print_hz_line()
     t1 = time.time()
     for s in sels:
-        print(f'Generating {scenes_list[s][1]} TIFF.')
-        print(f'Bands required: {[b.name for b in scenes_list[s][2]]}')
-        make_bands(Scenes(s))
+        print(f'Generating {images_list[s][1]} TIFF.')
+        print(f'Bands required: {[b.name for b in images_list[s][2]]}')
+        make_bands(scene, ImageType(s))
         print_hz_line()
     t2 = time.time()
     print(f'Overall process completed in {t2 - t1:.3f} seconds')
 
 
-def download_band(band):
-    """function for obtaining file from internet resource and save it to
-disk
-
-    :param band: band to download to disk
-    :type band: .Bands enum
-
-    """
-    output_file = get_band_file(band)
-    # Set TIF file URL to be requested
-    band_url = f'{url_base}{band.value}.TIF'
-    # Request file
-    print(f'Getting {band.name} from web.')
-    save_file_from_web(band_url, output_file)
-
-
-def check_bands_exist(bands_list):
+def check_bands_exist(scene, bands_list):
     """function to see if files have been files are present on disk and
 save them to disk if not present
 
@@ -177,10 +144,10 @@ save them to disk if not present
     """
 
     for band in bands_list:
-        band_file = get_band_file(band)
+        band_file = landsat8.get_band_filename(scene, band)
         if not os.path.exists(band_file):
             print(f'{band.name} band not found in local directory.')
-            download_band(band)
+            landsat8.download_band(scene, band)
         else:
             print(f'{band.name} band loaded from local directory.')
 
@@ -252,7 +219,7 @@ def get_bands(band_list):
     return temp_list, meta
 
 
-def stack_tiffs(bands_list, filename):
+def stack_tiffs(bands_list, scene, filename):
     """stacks the tiffs on band list to make a merged tiff
 
     :param bands_list: list of bands to merge 
@@ -262,7 +229,9 @@ def stack_tiffs(bands_list, filename):
 
     """
 
-    file_list = [get_band_file(band) for band in bands_list]
+    file_list = [
+        landsat8.get_band_filename(scene, band) for band in bands_list
+    ]
     # only metadata of first file is read to copy to the merge tiff
     with rasterio.open(file_list[0]) as src0:
         meta = src0.meta
@@ -275,30 +244,30 @@ def stack_tiffs(bands_list, filename):
     print(f'Successfully created: {filename}')
 
 
-def make_bands(scene):
-    """makes bands for the scene and saves it.
+def make_bands(scene_name, image):
+    """makes bands for the image and saves it.
 
-    :param scene: scene to be created/calculated
-    :type scene: Scenes enum
+    :param image: image to be created/calculated
+    :type image: ImageType enum
 
     """
 
-    bands_list = scenes_list[scene.value][2]
-    check_bands_exist(bands_list)
+    bands_list = images_list[image.value][2]
+    check_bands_exist(scene_name, bands_list)
 
-    #enum scenes has merger scenes except for 0 and 1
-    if scene.value > 1:
-        stack_tiffs(bands_list, get_scene_file(scene))
+    #enum images has merger images except for 0 and 1
+    if image.value > 1:
+        stack_tiffs(bands_list, scene_name, get_image_file(scene_name, image))
         return
 
     bands, meta = get_bands(bands_list)
     meta.update(dtype='float32')
-    print(f'Calculating {scene.name} scene from bands.')
-    if scene == Scenes.NDVI:
+    print(f'Calculating {image.name} image from bands.')
+    if image == ImageType.NDVI:
         band = calc_ndvi_bands(bands)
-    elif scene == Scenes.SAVI:
+    elif image == ImageType.SAVI:
         band = calc_savi_bands(bands)
-    export_tif(get_scene_file(scene), band, meta)
+    export_tif(get_image_file(scene_name, image), band, meta)
 
 
 def export_tif(file_name, band, meta):
