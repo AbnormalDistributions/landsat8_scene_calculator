@@ -1,3 +1,6 @@
 rasterio
 requests
 numpy
+pandas
+beautifulsoup4
+pycurl
