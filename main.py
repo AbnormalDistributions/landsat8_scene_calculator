@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Date: 2020/10/10
 Initial Author: James Steele Howard
@@ -12,31 +13,21 @@ This script creates GeoTIFF files of the following:
 - Bathymetric
 '''
 import os
-from enum import Enum
+import sys
 import time
+import argparse
+from enum import Enum
+
 import numpy as np
 import rasterio
 import requests
-import sys
 
 import landsat8
 import customIO
+from landsat8 import Bands
 
 
-class Bands(Enum):
-    AEROSOL = 1
-    BLUE = 2
-    GREEN = 3
-    RED = 4
-    NEAR_IR = 5
-    SHORT_IR1 = 6
-    SHORT_IR2 = 7
-    PANCROMATIC = 8
-    CIRRUS = 9
-    LONG_IR1 = 10
-    LONG_IR2 = 11
-
-
+#note that the multiple selection only works if ImageType enum has less than 9 members
 class ImageType(Enum):
     NDVI = 0
     SAVI = 1
@@ -103,12 +94,20 @@ def print_hz_line():
     print('-' * cols)
 
 
-def main():
+def main(scene=None, images=None):
     """main interactive interface
     """
-    print('Select the scene where you want to work')
-    scene = landsat8.choose_scene()
-    print_hz_line()
+    if scene == None:
+        print('Select the scene where you want to work')
+        scene = landsat8.choose_scene()
+        print_hz_line()
+    if images == None:
+        images = get_images()
+    generate_images(scene, images)
+    return 0
+
+
+def get_images():
     print(
         'Select a calculation type (input more than on number to select multiple):'
     )
@@ -116,19 +115,22 @@ def main():
         print(f'{i + 1}: ({image[0]}) - {image[1]}')
     print('\n0: *Exit*')
     print_hz_line()
-    # Take Input and process selection
     selection = customIO._input('output tiffs:', int)
     if selection == 0:
         print('Exiting...')
-        return
-    sels = [int(s) - 1 for s in list(str(selection).strip())]
-    print(f'ImageType Selected: {[images_list[s][0] for s in sels]}')
+        raise SystemExit(0)
+    sels = [ImageType(int(s) - 1) for s in list(str(selection).strip())]
+    print(f'ImageType Selected: {[images_list[s.value][0] for s in sels]}')
     print_hz_line()
+    return sels
+
+
+def generate_images(scene, images):
     t1 = time.time()
-    for s in sels:
-        print(f'Generating {images_list[s][1]} TIFF.')
-        print(f'Bands required: {[b.name for b in images_list[s][2]]}')
-        make_bands(scene, ImageType(s))
+    for img in images:
+        print(f'Generating {images_list[img.value][1]} TIFF.')
+        print(f'Bands required: {[b.name for b in images_list[img.value][2]]}')
+        make_bands(scene, img)
         print_hz_line()
     t2 = time.time()
     print(f'Overall process completed in {t2 - t1:.3f} seconds')
@@ -150,48 +152,6 @@ save them to disk if not present
             landsat8.download_band(scene, band)
         else:
             print(f'{band.name} band loaded from local directory.')
-
-
-def save_file_from_web(url, filename):
-    """function for retrieving files from URL and writing them to disk
-
-    :param url: url of the file on web
-    :type url: string
-    :param filename: name of the file to save on disk
-    :type filename: string
-    :returns: True if success False if not
-    :rtype: bool
-    """
-    r = requests.get(url, stream=True, allow_redirects=True)
-    if r.status_code != 200:
-        print('Connection Error.')
-        return False
-
-    size = r.headers.get('Content-Length')
-    if size == None:
-        print('Download file size unknown. Downloading...')
-        with open(filename, 'wb') as writer:
-            writer.write(r.content)
-        print('Download Complete)')
-        return True
-    print(f'Downloading file...')
-    cols = 50
-    downloaded = 0
-    try:
-        with open(filename, 'wb') as writer:
-            for data in r.iter_content(chunk_size=1024):
-                writer.write(data)
-                downloaded += 1024
-                perc = int(100 * downloaded / int(size))
-                char_len = (downloaded) * (cols - 10) / int(size)
-                print('#' * int(char_len), f'{perc}%', end='\r')
-    except (KeyboardInterrupt, requests.exceptions.ChunkedEncodingError) as e:
-        print(f'Download Interupted.{e} \nTry again...')
-        if os.path.exists(filename):
-            os.remove(filename)
-        sys.exit(1)
-    print('\nDownload Completed')
-    return True
 
 
 def get_bands(band_list):
@@ -288,4 +248,30 @@ def export_tif(file_name, band, meta):
 
 
 if __name__ == '__main__':
-    main()
+    aps = argparse.ArgumentParser()
+    aps.add_argument('-i',
+                     '--interactive',
+                     help='Start Interactive Session',
+                     action='store_true')
+    aps.add_argument('-a',
+                     '--auto',
+                     help='Repeate the actions of last Interactive Session',
+                     action='store_true')
+    aps.add_argument('--image',
+                     nargs='+',
+                     choices=[i.name for i in ImageType],
+                     help='acronym for Image file to generate')
+    aps.add_argument('--scene', help='String Representation of Scene')
+
+    ARGS = aps.parse_args(sys.argv[1:])
+    customIO.AUTO_INPUT = ARGS.auto
+    images = None
+    if ARGS.auto or ARGS.interactive:
+        sys.exit(main())
+    if ARGS.image:
+        images = [ImageType[img] for img in ARGS.image]
+    if ARGS.scene:
+        if not landsat8.verify_scene_str(ARGS.scene):
+            raise SystemExit('Entered scene is not available.')
+
+    main(scene=ARGS.scene, images=images)

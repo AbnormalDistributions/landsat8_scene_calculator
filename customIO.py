@@ -1,6 +1,7 @@
 import json
 import os
 
+AUTO_INPUT = False
 
 defaults_file = "./data/defaults.json"
 
@@ -13,6 +14,11 @@ def _input(prompt, dtype=str, default=None):
     if not default:
         default = read_default(prompt)
     print(prompt)
+    if AUTO_INPUT:
+        print(f'AUTO:{default}')
+        if default == None:
+            raise SystemExit("Default not available")
+        return default
     while True:
         try:
             user_input = input(f'<{default}>?')
