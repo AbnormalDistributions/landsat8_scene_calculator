@@ -204,14 +204,14 @@ def choose_file(scene):
     return files[i]
 
 
-def main(scene=None):
+def run_interactive(scene=None):
     if not scene:
         scene = choose_scene()
     f = choose_file(scene)
     download_scene_file(scene, f.link_text)
 
 
-if __name__ == '__main__':
+def main():
     aps = argparse.ArgumentParser()
     aps.add_argument('-i',
                      '--interactive',
@@ -241,7 +241,7 @@ if __name__ == '__main__':
     customIO.AUTO_INPUT = ARGS.auto
     bands = []
     if ARGS.auto or ARGS.interactive:
-        sys.exit(main())
+        sys.exit(run_interactive())
     if ARGS.bands:
         bands += [Bands[b] for b in ARGS.bands]
     if ARGS.bands_no:
@@ -259,4 +259,7 @@ if __name__ == '__main__':
         for b in bands:
             download_band(scene, b, ARGS.file_type)
         sys.exit(0)
-    main(scene)
+    run_interactive(scene)
+
+if __name__ == '__main__':
+    main()

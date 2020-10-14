@@ -94,19 +94,6 @@ def print_hz_line():
     print('-' * cols)
 
 
-def main(scene=None, images=None):
-    """main interactive interface
-    """
-    if scene == None:
-        print('Select the scene where you want to work')
-        scene = landsat8.choose_scene()
-        print_hz_line()
-    if images == None:
-        images = get_images()
-    generate_images(scene, images)
-    return 0
-
-
 def get_images():
     print(
         'Select a calculation type (input more than one number to select multiple):'
@@ -247,7 +234,20 @@ def export_tif(file_name, band, meta):
     print(f'Successfully created: {file_name}')
 
 
-if __name__ == '__main__':
+def run_interactive(scene=None, images=None):
+    """main interactive interface
+    """
+    if scene == None:
+        print('Select the scene where you want to work')
+        scene = landsat8.choose_scene()
+        print_hz_line()
+    if images == None:
+        images = get_images()
+    generate_images(scene, images)
+    return 0
+    
+
+def main():
     aps = argparse.ArgumentParser()
     aps.add_argument('-i',
                      '--interactive',
@@ -267,11 +267,14 @@ if __name__ == '__main__':
     customIO.AUTO_INPUT = ARGS.auto
     images = None
     if ARGS.auto or ARGS.interactive:
-        sys.exit(main())
+        sys.exit(run_interactive())
     if ARGS.image:
         images = [ImageType[img] for img in ARGS.image]
     if ARGS.scene:
         if not landsat8.verify_scene_str(ARGS.scene):
             raise SystemExit('Entered scene is not available.')
 
-    main(scene=ARGS.scene, images=images)
+    run_interactive(scene=ARGS.scene, images=images)
+
+if __name__ == '__main__':
+    main()
