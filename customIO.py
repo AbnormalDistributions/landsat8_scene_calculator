@@ -1,6 +1,7 @@
 import json
 import os
 
+
 AUTO_INPUT = False
 
 defaults_file = "./data/defaults.json"
@@ -30,6 +31,26 @@ def _input(prompt, dtype=str, default=None):
             return user_input
         except ValueError:
             print(f'Enter value of data type {dtype.__name__}.')
+
+
+def get_yn(prompt):
+    while True:
+        choice = _input(f'{prompt} (y/n):', str).lower()
+        if choice == 'y':
+            return True
+        elif choice == 'n':
+            return False
+        print(f"Given response '{choice}' is not 'y' or 'n'.")
+
+
+def choose_from_list(input_list):
+    if len(input_list) == 0:
+        return None, None
+    print('\nAvailable Options:')
+    for i, l in enumerate(input_list):
+        print(f'{i}-{l}')
+    choice = _input(f'your choice(0-{i})', int)
+    return choice, input_list[choice]
 
 
 def read_default(prompt):

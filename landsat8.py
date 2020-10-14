@@ -13,7 +13,6 @@ from bs4 import BeautifulSoup
 import customIO
 import requests
 
-
 TableContent = namedtuple('TableContent', ['link', 'link_text', 'text'])
 
 lsat8_url = "https://landsat-pds.s3.amazonaws.com/c1/L8/"
@@ -83,7 +82,8 @@ def verify_scene_str(scene):
 
 def get_scenes(path, row, latest=False, scene_str=''):
     df = index_df()
-    df_filter = df[(df.row == row) & (df.path == path)]
+    df_filter = df[(df.row == row)
+                   & (df.path == path)].sort_values('acquisitionDate')
     if latest:
         return df_filter.iloc[-1].squeeze()
     if scene_str:
@@ -158,47 +158,29 @@ def get_available_files(scene):
     return files
 
 
-def get_yn(prompt):
-    # tobe moved to customIO
-    while True:
-        choice = customIO._input(f'{prompt} (y/n):', str).lower()
-        if choice == 'y':
-            return True
-        elif choice == 'n':
-            return False
-        print(f"Given response '{choice}' is not 'y' or 'n'.")
-
-
-def choose_from_list(input_list):
-    # to be moved to customIO
-    if len(input_list) == 0:
-        return None, None
-    print('\nAvailable Options:')
-    for i, l in enumerate(input_list):
-        print(f'{i}-{l}')
-    choice = customIO._input(f'your choice(0-{i})', int)
-    return choice, input_list[choice]
-
-
 def choose_scene_pathrow(path, row):
-    yes_recent = get_yn('Do you want most recent data?')
+    yes_recent = customIO.get_yn('Do you want most recent data?')
     scene = get_scenes(path, row, yes_recent)
     if not yes_recent:
-        j, s = choose_from_list(list(scene.productId))
+        options = [
+            f'{r.productId} (CC:{r.cloudCover:2.2f}%)'
+            for i, r in scene.iterrows()
+        ]
+        j, s = customIO.choose_from_list(options)
         scene = scene.iloc[j].squeeze()
     return scene
 
 
 def choose_scene():
     while True:
-        yes_str = get_yn('Do you have Scene string representation?')
+        yes_str = customIO.get_yn('Do you have Scene string representation?')
         if yes_str:
             scene_str = customIO._input('Enter Scene string representation',
                                         str)
             if verify_scene_str(scene_str):
                 return scene_str
             print('Given String representation is not in database.')
-            if get_yn('Update Database?'):
+            if customIO.get_yn('Update Database?'):
                 download_index()
             continue
         else:
@@ -208,17 +190,17 @@ def choose_scene():
         print('You selected:')
         for i, c in scene.iteritems():
             print(f'{i:15s}\t:{c}')
-        confirm = get_yn('Confirm selection?')
+        confirm = customIO.get_yn('Confirm selection?')
         if confirm:
             return scene.productId
-        elif not get_yn('Do you want to search again?'):
+        elif not customIO.get_yn('Do you want to search again?'):
             return None
 
 
 def choose_file(scene):
     files = get_available_files(scene)
     desc = [f.text for f in files]
-    i, f = choose_from_list(desc)
+    i, f = customIO.choose_from_list(desc)
     return files[i]
 
 

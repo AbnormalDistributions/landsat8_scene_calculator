@@ -24,11 +24,26 @@ To use this program you need to know which scene you want to work on.
 1. Find the scene you would like on [[https://search.remotepixel.ca][RemotePixel.ca]].
 2. Note the [[https://landsat.gsfc.nasa.gov/the-worldwide-reference-system/][WRS path and row number]] of the image (written inside blue circle at the center of each scene). Or the [[https://docs.opendata.aws/landsat-pds/readme.html][string of the scene]].
 
+Both scripts files landsat8.py and main.py can be run interactively or from command line arguments. pass '-h' to see the command line uses, or pass '-i' to run interactively. You can also run interactive with defaults input with '-a', which will retrace the previous interactive session. (useful if your downloads were interrupted.)
+
+
 *** As Image creator
 1. Run the 'main.py' script.
 2. If you do not have the string, enter path number and row number and browse through available scenes data and choose one. (Or you can say yes to latest).
 3. You'll get the details on the scene you just selected confirm it is what you wanted. It's also a good idea to remember or note the scene string you choose as it'll be easier to use in future. The scene string is in the index 'productId'.
 4. After you chose the scene where you want to work on, choose the image you want to create, it'll automatically download any necessary bands for that image and create it. The downloaded bands and generated images will be saved in './data/PPPRRR/SCENE_STR/' directory where PPP and RRR are path and row numbers. 
+
+Example uses:
+
+- Generates RGB image for scene. LC08_L1TP_141041_20190324_20190403_01_T1
+#+BEGIN_SRC shell
+python main.py --scene LC08_L1TP_141041_20190324_20190403_01_T1 --image RGB
+#+END_SRC
+- Generates NIR and RGB images for scene you choose interactively after entering this command.
+#+BEGIN_SRC shell
+python main.py --image NIR RGB
+#+END_SRC
+
 
 See Resources for more information on the GeoTIFFs that are created.
 
@@ -39,11 +54,17 @@ If you only want to download bands for creating Images it'll download those auto
 3. You'll get the details on the scene you just selected confirm it is what you wanted.
 4. It'll give you list of available files, choose the file you want to download.
 
-** Future Features
-I plan to add following features in future:
-1. Command line arguments using argparse. All the inputs that can be given through prompts will be available through command line arguments.
-2. Automation of script, by using the defaults.json the user will be able to automate what he did in his last session. Or even make a script like file to download large number of files. 
 
+Example uses:
+
+- Downloads band 11 file TIF.ovr from wrs 141/41, asks for scene selection because scene string is not provided.
+#+BEGIN_SRC shell
+python landsat8.py --wrs-path 141 --wrs-row 41 --bands-no 11 --file-type TIF.ovr
+#+END_SRC
+- Downloads RED, GREEN and BLUE bands .TIF file from scene  LC08_L1TP_141041_20190324_20190403_01_T1
+#+BEGIN_SRC shell
+python landsat8.py --scene LC08_L1TP_141041_20190324_20190403_01_T1 --bands RED GREEN BLUE
+#+END_SRC
 
 * Scene Locator
 The following site gives you the available scenes in WRS coordinate, the numbers on top of any box is in path/row format. The scene string can also be found out if you look at the URL of the image shown on the right when you click at a scene. But since you can search for all scenes for that WRS path/row interactively it's not necessary to do that. But having the string makes things easier. 

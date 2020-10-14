@@ -109,7 +109,7 @@ def main(scene=None, images=None):
 
 def get_images():
     print(
-        'Select a calculation type (input more than on number to select multiple):'
+        'Select a calculation type (input more than one number to select multiple):'
     )
     for i, image in enumerate(images_list):
         print(f'{i + 1}: ({image[0]}) - {image[1]}')
