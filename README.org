@@ -3,9 +3,9 @@
 * Landsat8 Scene Calculator
 
 ** Introduction
-This program can download the landsat8 images and other files from [[landsat-pds.s3.amazonaws.com][amazonaws]]. The 11 bands can be downloaded on demand depending upon which type of scene you would like to calculate. Any files required for the scence calculation will be downloaded and scenes will be created once files have been saved to local disk. Bands can be downloaded independently or automatically depending on what bands you'll need for the specific scene.
+This program can download the landsat8 images and other files from [[https://landsat-pds.s3.amazonaws.com][Amazon Web Services]]. The 11 bands can be downloaded on demand depending upon which type of scene you would like to generate. Any files required for scence generation will be downloaded. Scenes will be generated once files have been saved to local disk. Bands can be downloaded independently or automatically depending on what bands are needed for the specific scene.
 
-This program can create GeoTIFF files of the following:
+This program creates GeoTIFF files of the following:
  - Normalized Difference Vegetation Index Calculation
  - Soil Adjusted Vegetation Index Calculation
  - Visible Spectrum (Natural Color) Composite
@@ -14,24 +14,27 @@ This program can create GeoTIFF files of the following:
  - Geology Composite
  - Bathymetric Composite
 
-** Important Notes:
+** Important Notes
  - ./data/index.gz is index for available data, which is downloaded if not present, do not delete it. 
  - ./data/defaults.json is user's last input for prompts in the program, it's safe to delete it but you'll have to input the values to prompt. 
- - If download is interrupted because of any problems the program will exit, on the next run the downloaded file can resume download as long the incomplete '.part' file is not deleted. 
+ - If download is interrupted because of any problems the program will exit. On the next run the downloaded file can resume download as long the incomplete '.part' file is not deleted. 
 
-** Usage:
-To use this program you need to know which scene you want to work on.
-1. Find the scene you would like on [[https://search.remotepixel.ca][RemotePixel.ca]].
+** Usage
+To use this program the scene with which you would like to work is required.
+1. Find the scene you would like on at [[https://search.remotepixel.ca][RemotePixel.ca]].
 2. Note the [[https://landsat.gsfc.nasa.gov/the-worldwide-reference-system/][WRS path and row number]] of the image (written inside blue circle at the center of each scene). Or the [[https://docs.opendata.aws/landsat-pds/readme.html][string of the scene]].
 
-Both scripts files landsat8.py and main.py can be run interactively or from command line arguments. pass '-h' to see the command line uses, or pass '-i' to run interactively. You can also run interactive with defaults input with '-a', which will retrace the previous interactive session. (useful if your downloads were interrupted.)
+Both landsat8.py and main.py can be run interactively or from command line arguments: 
+- Pass '-h' to see the command line uses
+- Pass '-i' to run interactively. 
+- You can also run interactive with defaults input with '-a', which will retrace the previous interactive session. (Useful if your downloads were interrupted.)
 
 
-*** As Image creator
+*** To Use as Scene Calculator
 1. Run the 'main.py' script.
-2. If you do not have the scene string, enter path number and row number and browse through available scenes data and choose one. (Or you can say yes to use last).
-3. You'll get the details on the scene you just selected to confirm scene selection. It's also a good idea to remember or note the scene string you choose as it'll be easier to use in future. The scene string is in the index 'productId'.
-4. After you chose the scene with which you would like to work, choose the calculation/composite would like to to create. The program will automatically download any necessary bands for that image and calculate the scene. Bands and generated images will be saved in './data/PPPRRR/SCENE_STR/' directory where PPP and RRR are path and row numbers. 
+2. If you do not have the scene string, the script allows for browing available scenes data. Enter path number and row number. If you have the scene string, input as prompted. (Input yes to use last used most recently used scene.)
+3. You'll get the details on the scene previously selected to confirm scene selection. (It's also a good idea to remember or note the scene string for future reference. The scene string is in the index 'productId'.)
+4. After selecting the scene with which you would like to work, choose the calculation/composite you would like to to create. The program will automatically download any necessary bands for that image and generate the scene. Bands and generated images will be saved in './data/PPPRRR/SCENE_STR/' directory where PPP and RRR are path and row numbers. 
 
 Example uses:
 
@@ -45,9 +48,9 @@ python main.py --image NIR RGB
 #+END_SRC
 
 
-See Resources for more information on the GeoTIFFs that are created.
+See *Other Resources* below for more information on the GeoTIFFs calculated with this script.
 
-*** As Data downloader
+*** To Use as Raw GeoTIFF Downloader
 If you only want to download bands for calculating scenes, the program will download those automatically. In case you want to download more data the do the following:
 1. Run the 'landsat8.py' script.
 2. Enter the scene string or WRS path and row like in Image Creator.
@@ -66,12 +69,10 @@ python landsat8.py --wrs-path 141 --wrs-row 41 --bands-no 11 --file-type TIF.ovr
 python landsat8.py --scene LC08_L1TP_141041_20190324_20190403_01_T1 --bands RED GREEN BLUE
 #+END_SRC
 
-* Scene Locator
-The following site gives you the available scenes in WRS coordinate, the numbers on top of any box is in path/row format. The scene string can also be found out if you look at the URL of the image shown on the right when you click at a scene. But since you can search for all scenes for that WRS path/row interactively it's not necessary to do that. But having the string makes things easier. 
+* Scene Locator Resource
+The [[https://search.remotepixel.ca][RemotePixel.ca]] displays available scenes in WRS global notation. The numbers on top of any box is the path/row. The scene string can also be found out if in the URL of the image shown on the right when scene is selected. Since this script can search for all scenes for a specific WRS path/row interactively it is not necessary, but using [[https://search.remotepixel.ca][RemotePixel.ca]] to locate the scene string may make locating the area of interest easier. 
 
-[[https://search.remotepixel.ca][RemotePixel.ca]]
-
-* Resources
+* Other Resources
  - [[https://www.usgs.gov/core-science-systems/nli/landsat/landsat-normalized-difference-vegetation-index][(NDVI) Normalized Difference Vegetation Index]]
  - [[https://www.usgs.gov/core-science-systems/nli/landsat/landsat-soil-adjusted-vegetation-index][(SAVI) Soil Adjusted Vegetation Index]]
  - [[https://gisgeography.com/landsat-8-bands-combinations/][(Other Combinations) Landsat 8 Bands and Band Combinations]]
@@ -84,7 +85,7 @@ Code licensed under [[http://opensource.org/licenses/mit-license.html][MIT Licen
  - [[https://github.com/AbnormalDistributions][James Steele Howard]] - Original Author
  - [[https://github.com/Atreyagaurav][Gaurav Atreya]]
 
-** Fork
+** Forks
 There are many forks of this repository. For example:
 
 - [[https://github.com/Atreyagaurav/landsat8_scene_calculator][This fork]] is created and maintained by [[https://github.com/Atreyagaurav][Gaurav Atreya]]. For any developing features which aren't merge please look into it to avoid working on same features. 
