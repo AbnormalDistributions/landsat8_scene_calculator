@@ -40,7 +40,7 @@ class ImageType(Enum):
 
 
 def calc_ndvi_bands(bands):
-    """calculates the ndv index band 
+    """calculates the ndv index band
 
     :param bands: list of bands
     :type bands: np.darray
@@ -83,7 +83,7 @@ images_list = [
 ]
 
 
-def get_image_file(scene, image):
+def get_image_filename(scene, image):
     return os.path.join(landsat8.get_data_dir(scene), f'{image.name}.TIF')
 
 
@@ -141,7 +141,7 @@ save them to disk if not present
             print(f'{band.name} band loaded from local directory.')
 
 
-def get_bands(band_list):
+def get_bands(scene, band_list):
     """function for creating and return a list containing all band data
 
     :param band_list: list of bands to load
@@ -155,7 +155,7 @@ def get_bands(band_list):
     ## Initialize temp list
     temp_list = []
     for band in band_list:
-        input_file = get_band_file(band)
+        input_file = landsat8.get_band_filename(scene, band)
         # Open the files and append to 'temp' list
         with rasterio.open(input_file) as open_file:
             meta = open_file.meta
@@ -169,7 +169,7 @@ def get_bands(band_list):
 def stack_tiffs(bands_list, scene, filename):
     """stacks the tiffs on band list to make a merged tiff
 
-    :param bands_list: list of bands to merge 
+    :param bands_list: list of bands to merge
     :type bands_list: Bands enum
     :param filename: name of the file to save the merged tiff
     :type filename: string
@@ -204,17 +204,18 @@ def make_bands(scene_name, image):
 
     #enum images has merger images except for 0 and 1
     if image.value > 1:
-        stack_tiffs(bands_list, scene_name, get_image_file(scene_name, image))
+        stack_tiffs(bands_list, scene_name,
+                    get_image_filename(scene_name, image))
         return
 
-    bands, meta = get_bands(bands_list)
+    bands, meta = get_bands(scene_name, bands_list)
     meta.update(dtype='float32')
     print(f'Calculating {image.name} image from bands.')
     if image == ImageType.NDVI:
         band = calc_ndvi_bands(bands)
     elif image == ImageType.SAVI:
         band = calc_savi_bands(bands)
-    export_tif(get_image_file(scene_name, image), band, meta)
+    export_tif(get_image_filename(scene_name, image), band, meta)
 
 
 def export_tif(file_name, band, meta):
@@ -245,7 +246,7 @@ def run_interactive(scene=None, images=None):
         images = get_images()
     generate_images(scene, images)
     return 0
-    
+
 
 def main():
     aps = argparse.ArgumentParser()
@@ -275,6 +276,7 @@ def main():
             raise SystemExit('Entered scene is not available.')
 
     run_interactive(scene=ARGS.scene, images=images)
+
 
 if __name__ == '__main__':
     main()

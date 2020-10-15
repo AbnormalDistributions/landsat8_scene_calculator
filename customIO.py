@@ -6,9 +6,10 @@ AUTO_INPUT = False
 
 defaults_file = "./data/defaults.json"
 
+if not os.path.exists('./data'):
+    os.mkdir('data')
+
 if not os.path.exists(defaults_file):
-    if not os.path.exists(os.path.join(os.getcwd(), 'data')):
-        os.mkdir('data')
     with open(defaults_file, 'w') as w:
         w.write('{}')
 
