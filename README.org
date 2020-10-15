@@ -3,15 +3,16 @@
 * Landsat8 Scene Calculator
 
 ** Introduction
-This program can download the landsat8 images and other files from [[landsat-pds.s3.amazonaws.com][amazonaws]]. The 11 bands can be downloaded on demand depending upon which image you want to create. Or any files available for that scene can be downloaded. And after that standard images from those bands can be created. The downloads can be done independently or automatically depending on what bands you'll need for specific images.
+This program can download the landsat8 images and other files from [[landsat-pds.s3.amazonaws.com][amazonaws]]. The 11 bands can be downloaded on demand depending upon which type of scene you would like to calculate. Any files required for the scence calculation will be downloaded and scenes will be created once files have been saved to local disk. Bands can be downloaded independently or automatically depending on what bands you'll need for the specific scene.
 
 This program can create GeoTIFF files of the following:
- - Normalized Difference Vegetation Index
- - Soil Adjusted Vegetation Index
- - Visible Spectrum (Natural Color)
- - Short Wave Infrared
- - Agriculture
- - Bathymetric
+ - Normalized Difference Vegetation Index Calculation
+ - Soil Adjusted Vegetation Index Calculation
+ - Visible Spectrum (Natural Color) Composite
+ - Short-Wave Infrared Composite 
+ - Agriculture Composite
+ - Geology Composite
+ - Bathymetric Composite
 
 ** Important Notes:
  - ./data/index.gz is index for available data, which is downloaded if not present, do not delete it. 
@@ -28,9 +29,9 @@ Both scripts files landsat8.py and main.py can be run interactively or from comm
 
 *** As Image creator
 1. Run the 'main.py' script.
-2. If you do not have the string, enter path number and row number and browse through available scenes data and choose one. (Or you can say yes to latest).
-3. You'll get the details on the scene you just selected confirm it is what you wanted. It's also a good idea to remember or note the scene string you choose as it'll be easier to use in future. The scene string is in the index 'productId'.
-4. After you chose the scene where you want to work on, choose the image you want to create, it'll automatically download any necessary bands for that image and create it. The downloaded bands and generated images will be saved in './data/PPPRRR/SCENE_STR/' directory where PPP and RRR are path and row numbers. 
+2. If you do not have the scene string, enter path number and row number and browse through available scenes data and choose one. (Or you can say yes to use last).
+3. You'll get the details on the scene you just selected to confirm scene selection. It's also a good idea to remember or note the scene string you choose as it'll be easier to use in future. The scene string is in the index 'productId'.
+4. After you chose the scene with which you would like to work, choose the calculation/composite would like to to create. The program will automatically download any necessary bands for that image and calculate the scene. Bands and generated images will be saved in './data/PPPRRR/SCENE_STR/' directory where PPP and RRR are path and row numbers. 
 
 Example uses:
 
@@ -47,7 +48,7 @@ python main.py --image NIR RGB
 See Resources for more information on the GeoTIFFs that are created.
 
 *** As Data downloader
-If you only want to download bands for creating Images it'll download those automatically. In case you want to download more data the do the followings.
+If you only want to download bands for calculating scenes, the program will download those automatically. In case you want to download more data the do the following:
 1. Run the 'landsat8.py' script.
 2. Enter the scene string or WRS path and row like in Image Creator.
 3. You'll get the details on the scene you just selected confirm it is what you wanted.

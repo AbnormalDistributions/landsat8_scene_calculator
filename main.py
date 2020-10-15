@@ -239,7 +239,7 @@ def run_interactive(scene=None, images=None):
     """main interactive interface
     """
     if scene == None:
-        print('Select the scene where you want to work')
+        print('Select the scene with which you would like to work:)
         scene = landsat8.choose_scene()
         print_hz_line()
     if images == None:
