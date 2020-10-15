@@ -77,6 +77,14 @@ The [[https://search.remotepixel.ca][RemotePixel.ca]] displays available scenes 
  - [[https://www.usgs.gov/core-science-systems/nli/landsat/landsat-soil-adjusted-vegetation-index][(SAVI) Soil Adjusted Vegetation Index]]
  - [[https://gisgeography.com/landsat-8-bands-combinations/][(Other Combinations) Landsat 8 Bands and Band Combinations]]
 
+# Note (for those using PyCharm and IntelliJ IDEA):
+This code may require enabling a hidden option in the IDE. They apparently don't work well with *os.get_terminal_size()* out of the box. 
+
+To enable:
+1. Click Help > Edit Custom VM Options
+2. Add: *-Drun.processes.with.pty=true*
+3. Save the file. 
+
 * Licensing
 Code licensed under [[http://opensource.org/licenses/mit-license.html][MIT License]]
 
