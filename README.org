@@ -16,13 +16,13 @@ This program creates GeoTIFF files of the following:
 
 ** Important Notes
  - ./data/index.gz is index for available data, which is downloaded if not present, do not delete it. 
- - ./data/defaults.json is user's last input for prompts in the program, it's safe to delete it but you'll have to input the values to prompt. 
- - If download is interrupted because of any problems the program will exit. On the next run the downloaded file can resume download as long the incomplete '.part' file is not deleted. 
+ - ./data/defaults.json is user's last input for prompts in the program. It is safe to delete, but you will need to reinput previous values at prompt. 
+ - If download is interrupted because of any problems the program will exit. On the next run, the downloaded file can resume download as long the incomplete '.part' file is not deleted. 
 
 ** Usage
 To use this program the scene with which you would like to work is required.
-1. Find the scene you would like on at [[https://search.remotepixel.ca][RemotePixel.ca]].
-2. Note the [[https://landsat.gsfc.nasa.gov/the-worldwide-reference-system/][WRS path and row number]] of the image (written inside blue circle at the center of each scene). Or the [[https://docs.opendata.aws/landsat-pds/readme.html][string of the scene]].
+1. Find the scene you would like at [[https://search.remotepixel.ca][RemotePixel.ca]].
+2. Note the [[https://landsat.gsfc.nasa.gov/the-worldwide-reference-system/][WRS path/row number]] of the image (written inside blue circle at the center of each scene) or the [[https://docs.opendata.aws/landsat-pds/readme.html][string of the scene]].
 
 Both landsat8.py and main.py can be run interactively or from command line arguments: 
 - Pass '-h' to see the command line uses
@@ -33,7 +33,7 @@ Both landsat8.py and main.py can be run interactively or from command line argum
 *** To Use as Scene Calculator
 1. Run the 'main.py' script.
 2. If you do not have the scene string, the script allows for browing available scenes data. Enter path number and row number. If you have the scene string, input as prompted. (Input yes to use last used most recently used scene.)
-3. You'll get the details on the scene previously selected to confirm scene selection. (It's also a good idea to remember or note the scene string for future reference. The scene string is in the index 'productId'.)
+3. Details of scene you selected will be displayed. Confirm the scene selected. (It's also a good idea to remember or note the scene string for future reference. The scene string is in the index 'productId'.)
 4. After selecting the scene with which you would like to work, choose the calculation/composite you would like to to create. The program will automatically download any necessary bands for that image and generate the scene. Bands and generated images will be saved in './data/PPPRRR/SCENE_STR/' directory where PPP and RRR are path and row numbers. 
 
 Example uses:
@@ -51,11 +51,11 @@ python main.py --image NIR RGB
 See *Other Resources* below for more information on the GeoTIFFs calculated with this script.
 
 *** To Use as Raw GeoTIFF Downloader
-If you only want to download bands for calculating scenes, the program will download those automatically. In case you want to download more data the do the following:
+If you only want to download bands for calculating scenes, the program will download those automatically. To download files independently of scene generation:
 1. Run the 'landsat8.py' script.
-2. Enter the scene string or WRS path and row like in Image Creator.
-3. You'll get the details on the scene you just selected confirm it is what you wanted.
-4. It'll give you list of available files, choose the file you want to download.
+2. Enter the scene string or WRS path/row like in Image Creator.
+3. Details of scene you selected will be displayed. Confirm the scene selected.
+4. A list of available files will be displayed. Choose the files to download.
 
 
 Example uses:
