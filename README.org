@@ -3,7 +3,7 @@
 * Landsat8 Scene Calculator
 
 ** Introduction
-This program can download the landsat8 images and other files from [[https://landsat-pds.s3.amazonaws.com][Amazon Web Services]]. The 11 bands can be downloaded on demand depending upon which type of scene you would like to generate. Any files required for scence generation will be downloaded. Scenes will be generated once files have been saved to local disk. Bands can be downloaded independently or automatically depending on what bands are needed for the specific scene.
+This program can download the landsat8 images and other files from [[https://landsat-pds.s3.amazonaws.com][Amazon Web Services]]. The 11 bands can be downloaded on demand depending upon which type of scene you would like to generate. Any files required for scene generation will be downloaded. Scenes will be generated once files have been saved to local disk. Bands can be downloaded independently or automatically depending on what bands are needed for the specific calculation/composite.
 
 This program creates GeoTIFF files of the following:
  - Normalized Difference Vegetation Index Calculation
