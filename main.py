@@ -84,7 +84,7 @@ images_list = [
 
 
 def get_image_filename(scene, image):
-    return os.path.join(landsat8.get_data_dir(scene), f'{image.name}.TIF')
+    return os.path.join(landsat8.get_data_dir(scene), f'{"S" if image.value>2 else "I"}{image.value}-{image.name}.TIF')
 
 
 def print_hz_line():

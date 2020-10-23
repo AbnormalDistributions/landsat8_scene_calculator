@@ -3,6 +3,7 @@ import os
 
 
 AUTO_INPUT = False
+REPLACE_DOWNLOADED = False
 
 defaults_file = "./data/defaults.json"
 

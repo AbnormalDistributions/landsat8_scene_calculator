@@ -46,11 +46,14 @@ def get_download_url(scene, filename):
     return lsat8_url + f"{path:03d}/{row:03d}/{scene}/{filename}"
 
 
-def download_file(url, filepath, replace=False):
+def download_file(url, filepath, replace=customIO.REPLACE_DOWNLOADED):
     part_file = f'{filepath}.part'
     c = pycurl.Curl()
     c.setopt(pycurl.URL, url)
     c.setopt(pycurl.NOPROGRESS, 0)
+    if os.path.exists(filepath) and replace == False:
+        print('File already downloaded, skipping.')
+        return
     if os.path.exists(part_file) and replace == False:
         print('Previously Downloaded part found.')
         wmode = 'ab'
@@ -157,18 +160,33 @@ def get_available_files(scene):
     files = html_list(url)
     return files
 
+def confirm_scene(scene_obj):
+    print('You selected:')
+    for i, c in scene.iteritems():
+        print(f'{i:15s}\t:{c}')
+    confirm = customIO.get_yn('Confirm selection?')
+    if confirm:
+        return True, scene.productId
+    elif customIO.get_yn('Do you want to search again?'):
+        return False, None
+    else:
+        return True, None
+
 
 def choose_scene_pathrow(path, row):
-    yes_recent = customIO.get_yn('Do you want most recent data?')
-    scene = get_scenes(path, row, yes_recent)
-    if not yes_recent:
-        options = [
-            f'{r.productId} (CC:{r.cloudCover:2.2f}%)'
-            for i, r in scene.iterrows()
-        ]
-        j, s = customIO.choose_from_list(options)
-        scene = scene.iloc[j].squeeze()
-    return scene
+    while True:
+        yes_recent = customIO.get_yn('Do you want most recent data?')
+        scene = get_scenes(path, row, yes_recent)
+        if not yes_recent:
+            options = [
+                f'{r.productId} (CC:{r.cloudCover:2.2f}%)'
+                for i, r in scene.iterrows()
+            ]
+            j, s = customIO.choose_from_list(options)
+            scene = scene.iloc[j].squeeze()
+        success,scene_str = confirm_scene(scene)
+        if success:
+            return scene_str
 
 
 def choose_scene():
@@ -187,14 +205,10 @@ def choose_scene():
             path = customIO._input('Enter path:', int)
             row = customIO._input('Enter row:', int)
             scene = choose_scene_pathrow(path, row)
-        print('You selected:')
-        for i, c in scene.iteritems():
-            print(f'{i:15s}\t:{c}')
-        confirm = customIO.get_yn('Confirm selection?')
-        if confirm:
-            return scene.productId
-        elif not customIO.get_yn('Do you want to search again?'):
-            return None
+
+        success,scene_str = confirm_scene(scene)
+        if success:
+            return scene_str
 
 
 def choose_file(scene):
@@ -204,9 +218,7 @@ def choose_file(scene):
     return files[i]
 
 
-def run_interactive(scene=None):
-    if not scene:
-        scene = choose_scene()
+def run_interactive(scene):
     f = choose_file(scene)
     download_scene_file(scene, f.link_text)
 
@@ -220,6 +232,10 @@ def main():
     aps.add_argument('-a',
                      '--auto',
                      help='Repeate the actions of last Interactive Session',
+                     action='store_true')
+    aps.add_argument('-r',
+                     '--replace',
+                     help='Replace the previously downloaded files',
                      action='store_true')
     aps.add_argument('--scene', help='String Representation of Scene')
     aps.add_argument('--bands-no',
@@ -239,6 +255,7 @@ def main():
 
     ARGS = aps.parse_args(sys.argv[1:])
     customIO.AUTO_INPUT = ARGS.auto
+    customIO.REPLACE_DOWNLOADED = ARGS.replace
     bands = []
     if ARGS.auto or ARGS.interactive:
         sys.exit(run_interactive())
