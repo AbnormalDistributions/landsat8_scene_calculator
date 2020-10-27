@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 import customIO
 import requests
 
+
 TableContent = namedtuple('TableContent', ['link', 'link_text', 'text'])
 
 lsat8_url = "https://landsat-pds.s3.amazonaws.com/c1/L8/"
@@ -32,6 +33,12 @@ class Bands(Enum):
     LONG_IR2 = 11
 
 
+class Downloader:
+    curls = []
+    processes = []
+    # TODO: multicurl downloader
+
+
 def index_df():
     if not os.path.exists('./data/index.gz'):
         download_index()
@@ -46,11 +53,17 @@ def get_download_url(scene, filename):
     return lsat8_url + f"{path:03d}/{row:03d}/{scene}/{filename}"
 
 
-def download_file(url, filepath, replace=False):
+def download_file(url,
+                  filepath,
+                  replace=customIO.REPLACE_DOWNLOADED,
+                  mcurl=None):
     part_file = f'{filepath}.part'
     c = pycurl.Curl()
     c.setopt(pycurl.URL, url)
     c.setopt(pycurl.NOPROGRESS, 0)
+    if os.path.exists(filepath) and replace == False:
+        print('File already downloaded, skipping.')
+        return
     if os.path.exists(part_file) and replace == False:
         print('Previously Downloaded part found.')
         wmode = 'ab'
@@ -112,6 +125,11 @@ def download_band(scene_str, band, filetype='TIF'):
     download_file(band_url, outfile)
 
 
+def download_bands(scene_str, bands_list, filetype='TIF'):
+    mcrl = pycurl.CurlMulti()
+    # TODO: multicurl download multiple bands
+
+
 def download_scene_file(scene_str, filename):
     data_dir = get_data_dir(scene_str)
     file_url = get_download_url(scene_str, filename)
@@ -158,6 +176,19 @@ def get_available_files(scene):
     return files
 
 
+def confirm_scene(scene_obj):
+    print('You selected:')
+    for i, c in scene_obj.iteritems():
+        print(f'{i:15s}\t:{c}')
+    confirm = customIO.get_yn('Confirm selection?')
+    if confirm:
+        return True, scene_obj.productId
+    elif customIO.get_yn('Do you want to search again?'):
+        return False, None
+    else:
+        return True, None
+
+
 def choose_scene_pathrow(path, row):
     yes_recent = customIO.get_yn('Do you want most recent data?')
     scene = get_scenes(path, row, yes_recent)
@@ -166,9 +197,14 @@ def choose_scene_pathrow(path, row):
             f'{r.productId} (CC:{r.cloudCover:2.2f}%)'
             for i, r in scene.iterrows()
         ]
-        j, s = customIO.choose_from_list(options)
+        j, s = customIO.choose_from_list(
+            'Choose the scene you want to work on', options)
         scene = scene.iloc[j].squeeze()
-    return scene
+    success, scene_str = confirm_scene(scene)
+    if success:
+        return scene_str
+    else:
+        raise SystemExit(0)
 
 
 def choose_scene():
@@ -186,29 +222,23 @@ def choose_scene():
         else:
             path = customIO._input('Enter path:', int)
             row = customIO._input('Enter row:', int)
-            scene = choose_scene_pathrow(path, row)
-        print('You selected:')
-        for i, c in scene.iteritems():
-            print(f'{i:15s}\t:{c}')
-        confirm = customIO.get_yn('Confirm selection?')
-        if confirm:
-            return scene.productId
-        elif not customIO.get_yn('Do you want to search again?'):
-            return None
+            scene_str = choose_scene_pathrow(path, row)
+            return scene_str
 
 
 def choose_file(scene):
     files = get_available_files(scene)
     desc = [f.text for f in files]
-    i, f = customIO.choose_from_list(desc)
-    return files[i]
+    indices, _ = customIO.choose_from_list('Choose the files to download:',
+                                           desc,
+                                           multiple=True)
+    return [files[i] for i in indices]
 
 
-def run_interactive(scene=None):
-    if not scene:
-        scene = choose_scene()
-    f = choose_file(scene)
-    download_scene_file(scene, f.link_text)
+def run_interactive(scene):
+    files = choose_file(scene)
+    for f in files:
+        download_scene_file(scene, f.link_text)
 
 
 def main():
@@ -220,6 +250,10 @@ def main():
     aps.add_argument('-a',
                      '--auto',
                      help='Repeate the actions of last Interactive Session',
+                     action='store_true')
+    aps.add_argument('-r',
+                     '--replace',
+                     help='Replace the previously downloaded files',
                      action='store_true')
     aps.add_argument('--scene', help='String Representation of Scene')
     aps.add_argument('--bands-no',
@@ -239,6 +273,7 @@ def main():
 
     ARGS = aps.parse_args(sys.argv[1:])
     customIO.AUTO_INPUT = ARGS.auto
+    customIO.REPLACE_DOWNLOADED = ARGS.replace
     bands = []
     if ARGS.auto or ARGS.interactive:
         sys.exit(run_interactive())
@@ -260,6 +295,7 @@ def main():
             download_band(scene, b, ARGS.file_type)
         sys.exit(0)
     run_interactive(scene)
+
 
 if __name__ == '__main__':
     main()
