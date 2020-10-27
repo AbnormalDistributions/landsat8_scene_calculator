@@ -84,7 +84,7 @@ images_list = [
 
 
 def get_image_filename(scene, image):
-    return os.path.join(landsat8.get_data_dir(scene), f'{"S" if image.value>2 else "I"}{image.value}-{image.name}.TIF')
+    return os.path.join(landsat8.get_data_dir(scene), f'{"S" if image.value>1 else "I"}{image.value}-{image.name}.TIF')
 
 
 def print_hz_line():
@@ -95,19 +95,10 @@ def print_hz_line():
 
 
 def get_images():
-    print(
-        'Select a calculation type (input more than one number to select multiple):'
-    )
-    for i, image in enumerate(images_list):
-        print(f'{i + 1}: ({image[0]}) - {image[1]}')
-    print('\n0: *Exit*')
+    indices,_ = customIO.choose_from_list('Select a calculation type to output', [f'({image[0]}) - {image[1]}' for image in images_list],multiple=True)
     print_hz_line()
-    selection = customIO._input('output tiffs:', int)
-    if selection == 0:
-        print('Exiting...')
-        raise SystemExit(0)
-    sels = [ImageType(int(s) - 1) for s in list(str(selection).strip())]
-    print(f'ImageType Selected: {[images_list[s.value][0] for s in sels]}')
+    sels = [ImageType(i) for i in indices]
+    print(f'ImageType Selected: {[s.name for s in sels]}')
     print_hz_line()
     return sels
 

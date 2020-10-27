@@ -32,6 +32,11 @@ class Bands(Enum):
     LONG_IR2 = 11
 
 
+class Downloader:
+    curls = []
+    processes = []
+    # TODO: multicurl downloader
+
 def index_df():
     if not os.path.exists('./data/index.gz'):
         download_index()
@@ -46,7 +51,7 @@ def get_download_url(scene, filename):
     return lsat8_url + f"{path:03d}/{row:03d}/{scene}/{filename}"
 
 
-def download_file(url, filepath, replace=customIO.REPLACE_DOWNLOADED):
+def download_file(url, filepath, replace=customIO.REPLACE_DOWNLOADED, mcurl=None):
     part_file = f'{filepath}.part'
     c = pycurl.Curl()
     c.setopt(pycurl.URL, url)
@@ -114,6 +119,10 @@ def download_band(scene_str, band, filetype='TIF'):
                                 f'{scene_str}_B{band.value}.{filetype}')
     download_file(band_url, outfile)
 
+def download_bands(scene_str,bands_list, filetype='TIF'):
+    mcrl = pycurl.CurlMulti()
+    # TODO: multicurl download multiple bands
+
 
 def download_scene_file(scene_str, filename):
     data_dir = get_data_dir(scene_str)
@@ -162,11 +171,11 @@ def get_available_files(scene):
 
 def confirm_scene(scene_obj):
     print('You selected:')
-    for i, c in scene.iteritems():
+    for i, c in scene_obj.iteritems():
         print(f'{i:15s}\t:{c}')
     confirm = customIO.get_yn('Confirm selection?')
     if confirm:
-        return True, scene.productId
+        return True, scene_obj.productId
     elif customIO.get_yn('Do you want to search again?'):
         return False, None
     else:
@@ -174,7 +183,6 @@ def confirm_scene(scene_obj):
 
 
 def choose_scene_pathrow(path, row):
-    while True:
         yes_recent = customIO.get_yn('Do you want most recent data?')
         scene = get_scenes(path, row, yes_recent)
         if not yes_recent:
@@ -182,11 +190,13 @@ def choose_scene_pathrow(path, row):
                 f'{r.productId} (CC:{r.cloudCover:2.2f}%)'
                 for i, r in scene.iterrows()
             ]
-            j, s = customIO.choose_from_list(options)
+            j, s = customIO.choose_from_list('Choose the scene you want to work on',options)
             scene = scene.iloc[j].squeeze()
         success,scene_str = confirm_scene(scene)
         if success:
             return scene_str
+        else:
+            raise SystemExit(0)
 
 
 def choose_scene():
@@ -204,23 +214,21 @@ def choose_scene():
         else:
             path = customIO._input('Enter path:', int)
             row = customIO._input('Enter row:', int)
-            scene = choose_scene_pathrow(path, row)
-
-        success,scene_str = confirm_scene(scene)
-        if success:
+            scene_str = choose_scene_pathrow(path, row)
             return scene_str
 
 
 def choose_file(scene):
     files = get_available_files(scene)
     desc = [f.text for f in files]
-    i, f = customIO.choose_from_list(desc)
-    return files[i]
+    indices, _ = customIO.choose_from_list('Choose the files to download:',desc,multiple=True)
+    return [files[i] for i in indices]
 
 
 def run_interactive(scene):
-    f = choose_file(scene)
-    download_scene_file(scene, f.link_text)
+    files = choose_file(scene)
+    for f in files:
+        download_scene_file(scene, f.link_text)
 
 
 def main():
