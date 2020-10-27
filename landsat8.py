@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 import customIO
 import requests
 
+
 TableContent = namedtuple('TableContent', ['link', 'link_text', 'text'])
 
 lsat8_url = "https://landsat-pds.s3.amazonaws.com/c1/L8/"
@@ -37,6 +38,7 @@ class Downloader:
     processes = []
     # TODO: multicurl downloader
 
+
 def index_df():
     if not os.path.exists('./data/index.gz'):
         download_index()
@@ -51,7 +53,10 @@ def get_download_url(scene, filename):
     return lsat8_url + f"{path:03d}/{row:03d}/{scene}/{filename}"
 
 
-def download_file(url, filepath, replace=customIO.REPLACE_DOWNLOADED, mcurl=None):
+def download_file(url,
+                  filepath,
+                  replace=customIO.REPLACE_DOWNLOADED,
+                  mcurl=None):
     part_file = f'{filepath}.part'
     c = pycurl.Curl()
     c.setopt(pycurl.URL, url)
@@ -119,7 +124,8 @@ def download_band(scene_str, band, filetype='TIF'):
                                 f'{scene_str}_B{band.value}.{filetype}')
     download_file(band_url, outfile)
 
-def download_bands(scene_str,bands_list, filetype='TIF'):
+
+def download_bands(scene_str, bands_list, filetype='TIF'):
     mcrl = pycurl.CurlMulti()
     # TODO: multicurl download multiple bands
 
@@ -169,6 +175,7 @@ def get_available_files(scene):
     files = html_list(url)
     return files
 
+
 def confirm_scene(scene_obj):
     print('You selected:')
     for i, c in scene_obj.iteritems():
@@ -183,20 +190,21 @@ def confirm_scene(scene_obj):
 
 
 def choose_scene_pathrow(path, row):
-        yes_recent = customIO.get_yn('Do you want most recent data?')
-        scene = get_scenes(path, row, yes_recent)
-        if not yes_recent:
-            options = [
-                f'{r.productId} (CC:{r.cloudCover:2.2f}%)'
-                for i, r in scene.iterrows()
-            ]
-            j, s = customIO.choose_from_list('Choose the scene you want to work on',options)
-            scene = scene.iloc[j].squeeze()
-        success,scene_str = confirm_scene(scene)
-        if success:
-            return scene_str
-        else:
-            raise SystemExit(0)
+    yes_recent = customIO.get_yn('Do you want most recent data?')
+    scene = get_scenes(path, row, yes_recent)
+    if not yes_recent:
+        options = [
+            f'{r.productId} (CC:{r.cloudCover:2.2f}%)'
+            for i, r in scene.iterrows()
+        ]
+        j, s = customIO.choose_from_list(
+            'Choose the scene you want to work on', options)
+        scene = scene.iloc[j].squeeze()
+    success, scene_str = confirm_scene(scene)
+    if success:
+        return scene_str
+    else:
+        raise SystemExit(0)
 
 
 def choose_scene():
@@ -221,7 +229,9 @@ def choose_scene():
 def choose_file(scene):
     files = get_available_files(scene)
     desc = [f.text for f in files]
-    indices, _ = customIO.choose_from_list('Choose the files to download:',desc,multiple=True)
+    indices, _ = customIO.choose_from_list('Choose the files to download:',
+                                           desc,
+                                           multiple=True)
     return [files[i] for i in indices]
 
 
@@ -285,6 +295,7 @@ def main():
             download_band(scene, b, ARGS.file_type)
         sys.exit(0)
     run_interactive(scene)
+
 
 if __name__ == '__main__':
     main()

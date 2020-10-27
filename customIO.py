@@ -1,7 +1,6 @@
 import json
 import os
 
-
 AUTO_INPUT = False
 REPLACE_DOWNLOADED = False
 
@@ -30,22 +29,22 @@ def _input(prompt, dtype=str, default=None, multiple=False):
         try:
             user_input = input(f'<{default}>?')
             if user_input == '':
-                if default==None:
+                if default == None:
                     continue
                 return default
-            elif ',' in user_input and multiple==True:
-                if user_input[0]!='[' or user_input[-1]!=']':
+            elif ',' in user_input and multiple == True:
+                if user_input[0] != '[' or user_input[-1] != ']':
                     user_input = f'[{user_input}]'
                 user_input = json.loads(user_input)
                 for ui in user_input:
                     assert type(ui) == dtype
-            elif multiple==False:
+            elif multiple == False:
                 user_input = dtype(user_input)
             else:
                 user_input = [dtype(user_input)]
             save_default(prompt, user_input)
             return user_input
-        except (ValueError,AssertionError):
+        except (ValueError, AssertionError):
             print(f'Enter value of data type {dtype.__name__}.')
 
 
@@ -67,7 +66,7 @@ def choose_from_list(prompt, input_list, multiple=False):
         print(f'{i}-{l}')
     while True:
         try:
-            choice = _input(f'{prompt}\nyour choice(0-{i})', int, multiple=multiple)
+            choice = _input(f'{prompt}: (0-{i})', int, multiple=multiple)
             if multiple:
                 return choice, [input_list[i] for i in choice]
             return choice, input_list[choice]
